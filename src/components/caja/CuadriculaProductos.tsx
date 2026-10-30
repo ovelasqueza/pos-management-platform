@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { Search, X } from "lucide-react";
 import { formatearPesos } from "@/lib/dominio/dinero";
 import { normalizarTexto } from "@/lib/dominio/producto";
 import type { ProductoVendible } from "@/lib/dominio/carrito";
@@ -11,16 +11,23 @@ type Props = {
   productos: ProductoVendible[];
   cantidades: Map<string, number>;
   onTocar: (p: ProductoVendible) => void;
+  /** Avisa al padre cuando se empieza/termina de buscar (para ocultar el aviso de venta) */
+  onBuscando?: (buscando: boolean) => void;
 };
 
 /**
  * Productos para vender. Ocupa exactamente el alto disponible: la página no se mueve,
  * solo la lista de productos se desplaza por dentro.
  * Las categorías van arriba como cuadros pequeños que se acomodan en varias filas (todas visibles).
+ * En pantallas táctiles el teclado tapa media pantalla: mientras se busca (campo enfocado o con
+ * texto) las categorías se ocultan para que se vean los productos filtrados.
  */
-export function CuadriculaProductos({ productos, cantidades, onTocar }: Props) {
+export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando }: Props) {
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState<string | null>(null);
+  const [enfocado, setEnfocado] = useState(false);
+  const campo = useRef<HTMLInputElement>(null);
+  const buscando = enfocado || busqueda.trim() !== "";
 
   // Solo categorías que tienen productos vendibles
   const categorias = useMemo(() => {
@@ -50,19 +57,54 @@ export function CuadriculaProductos({ productos, cantidades, onTocar }: Props) {
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
-      <label className="relative shrink-0">
-        <span className="sr-only">Buscar producto</span>
+      <div className="relative shrink-0">
+        <label htmlFor="buscar-producto" className="sr-only">
+          Buscar producto
+        </label>
         <Search size={20} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-texto-3" aria-hidden />
         <input
+          id="buscar-producto"
+          ref={campo}
           type="search"
+          inputMode="search"
+          enterKeyHint="search"
+          autoComplete="off"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
+          onFocus={() => {
+            setEnfocado(true);
+            onBuscando?.(true);
+          }}
+          onBlur={() => {
+            setEnfocado(false);
+            onBuscando?.(busqueda.trim() !== "");
+          }}
+          onKeyDown={(e) => {
+            // Enter cierra el teclado en pantalla y deja ver los resultados
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
           placeholder="Buscar producto"
-          className="min-h-12 w-full rounded-control border border-borde-activo bg-superficie pr-4 pl-11 text-base focus:border-primario focus:outline-none"
+          className="min-h-12 w-full rounded-control border border-borde-activo bg-superficie pr-12 pl-11 text-base focus:border-primario focus:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
-      </label>
+        {busqueda && (
+          <button
+            type="button"
+            aria-label="Borrar búsqueda"
+            // onMouseDown evita que el campo pierda el foco antes de borrar
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              setBusqueda("");
+              campo.current?.blur();
+              onBuscando?.(false);
+            }}
+            className="absolute top-1/2 right-1 flex size-10 -translate-y-1/2 items-center justify-center rounded-control text-texto-3 hover:bg-suave"
+          >
+            <X size={20} />
+          </button>
+        )}
+      </div>
 
-      {categorias.length > 0 && (
+      {categorias.length > 0 && !buscando && (
         <div className="grid shrink-0 grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-1.5" role="group" aria-label="Categorías">
           <button type="button" onClick={() => elegir(null)} className={chip(!categoriaActiva && !busqueda)} aria-pressed={!categoriaActiva}>
             TODOS

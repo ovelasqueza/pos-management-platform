@@ -316,6 +316,7 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
             <CuadriculaProductos
               productos={productos}
               cantidades={cantidades}
+              onBuscando={(b) => b && setUltimaVenta(null)}
               onTocar={(p) => {
                 setUltimaVenta(null);
                 despachar({ tipo: "agregar", producto: p });
