@@ -1,0 +1,799 @@
+<!DOCTYPE html><html lang="es"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<meta content="web_dashboard" name="shell-type">
+<title>Andina POS - Terminal de Venta</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+    @layer base {
+      html, body { margin: 0; padding: 0; }
+      body { overscroll-behavior: none; }
+      main > :first-child { margin-top: 0 !important; }
+      main > :last-child { margin-bottom: 0 !important; }
+    }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+  </style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface": "#ffffff",
+            "background": "#f8fafc",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-low": "#f8fafc",
+            "surface-container": "#f1f5f9",
+            "surface-container-high": "#e2e8f0",
+            "surface-container-highest": "#cbd5e1",
+            "on-surface": "#0f172a",
+            "on-surface-variant": "#475569",
+            "on-background": "#0f172a",
+            "primary": "#059669",
+            "primary-container": "#10b981",
+            "on-primary": "#ffffff",
+            "on-primary-container": "#ffffff",
+            "secondary": "#475569",
+            "secondary-container": "#e2e8f0",
+            "on-secondary": "#ffffff",
+            "on-secondary-container": "#1e293b",
+            "tertiary": "#d97706",
+            "tertiary-container": "#fef3c7",
+            "on-tertiary-container": "#92400e",
+            "error": "#dc2626",
+            "error-container": "#fee2e2",
+            "on-error-container": "#991b1b",
+            "outline": "#94a3b8",
+            "outline-variant": "#e2e8f0"
+          },
+          fontFamily: {
+            "headline-sm": ["Hanken Grotesk", "sans-serif"],
+            "body-md": ["Hanken Grotesk", "sans-serif"],
+            "label-data": ["JetBrains Mono", "monospace"],
+            "body-lg": ["Hanken Grotesk", "sans-serif"],
+            "display-currency": ["Hanken Grotesk", "sans-serif"],
+            "display-currency-mobile": ["Hanken Grotesk", "sans-serif"],
+            "headline-lg": ["Hanken Grotesk", "sans-serif"],
+            "headline-md": ["Hanken Grotesk", "sans-serif"],
+            "label-caps": ["Hanken Grotesk", "sans-serif"],
+            "body-sm": ["Hanken Grotesk", "sans-serif"],
+            "label-lg": ["Hanken Grotesk", "sans-serif"],
+            "label-md": ["Hanken Grotesk", "sans-serif"],
+            "label-sm": ["Hanken Grotesk", "sans-serif"]
+          },
+          fontSize: {
+            "display-currency": ["38px", { lineHeight: "44px", letterSpacing: "-0.02em", fontWeight: "800" }],
+            "headline-lg": ["28px", { lineHeight: "36px", letterSpacing: "-0.01em", fontWeight: "700" }],
+            "headline-md": ["20px", { lineHeight: "28px", fontWeight: "700" }],
+            "headline-sm": ["16px", { lineHeight: "24px", fontWeight: "600" }],
+            "body-lg": ["16px", { lineHeight: "24px", fontWeight: "500" }],
+            "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+            "body-sm": ["12px", { lineHeight: "16px", fontWeight: "400" }],
+            "label-lg": ["15px", { lineHeight: "20px", fontWeight: "600" }],
+            "label-md": ["13px", { lineHeight: "18px", fontWeight: "600" }],
+            "label-sm": ["12px", { lineHeight: "16px", fontWeight: "500" }]
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-background font-body-md text-body-md text-on-surface select-none antialiased">
+<!-- SIDEBAR NAVIGATION: Pure Clean White Minimalist -->
+<aside class="fixed left-0 top-0 h-full w-64 bg-white border-r border-slate-200 z-50 flex flex-col justify-between py-4 shadow-[1px_0_12px_rgba(0,0,0,0.03)]">
+<div class="flex flex-col gap-4">
+<!-- Brand / Logo Header -->
+<div class="px-5 flex items-center gap-3 h-12">
+<img alt="Andina POS Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1V0vKOwdqc74vVGNJIkmqqCsBjs9Hx709RZIOFb8HTI1o0LG96M5S0Yny9QWFKr-bqxx75ut0dIG8_Y9X0PJtmwIuwv7VFHwH1IbhWVHgqGg8RVoPk5gEu3xW7z9h7x3yPMv9aknUfOPi0yS7msfATasuFEBNL5YofGG8L6ppJps2aKbfBeOkRqJ73yOpHS9Cm0305KUtDubk60RdxO1zrJEJjCf4CUP-3jIc6I0kM">
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-emerald-700 font-extrabold leading-none tracking-tight">ANDINA</span>
+<span class="text-[11px] font-bold text-slate-400 tracking-wider">POS COLOMBIA</span>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-1.5 px-3">
+<a aria-current="page" class="flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-xl bg-emerald-600 text-white font-semibold shadow-sm transition-all" data-path="terminal-pos" href="#">
+<span class="material-symbols-outlined text-[22px]">point_of_sale</span>
+<span class="font-label-lg text-label-lg">Caja Rápida POS</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium transition-all" data-path="cobro-y-vueltas" href="#">
+<span class="material-symbols-outlined text-slate-500 text-[22px]">payments</span>
+<span class="font-label-lg text-label-lg">Cobro &amp; Vueltas</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium transition-all" data-path="panel-administrador" href="#">
+<span class="material-symbols-outlined text-slate-500 text-[22px]">query_stats</span>
+<span class="font-label-lg text-label-lg">Administración</span>
+</a>
+</nav>
+</div>
+<!-- Sidebar Bottom: Shift Info & Logout -->
+<div class="px-3 flex flex-col gap-2.5">
+<div class="bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="text-xs font-semibold text-slate-500">Turno #04</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">Abierto</span>
+</div>
+<span class="text-xs font-medium text-slate-700">Cajero: Laura Mora</span>
+</div>
+<a class="flex items-center justify-center gap-2 px-4 min-h-[48px] rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm transition-all border border-slate-200/80 active:scale-[0.99]" data-path="inicio-de-sesion" href="#">
+<span class="material-symbols-outlined text-red-500 text-[20px]">logout</span>
+<span class="">Cambio de Turno</span>
+</a>
+</div>
+</aside>
+<!-- MAIN WORKSPACE -->
+<div class="pl-64">
+<!-- Top Header: Clean Minimalist White -->
+<header class="fixed top-0 left-64 right-0 h-16 bg-white/95 backdrop-blur-md border-b border-slate-200 z-40 flex items-center justify-between px-6 shadow-sm">
+<div class="flex items-center gap-4">
+<!-- Store Selector -->
+<div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 h-11 rounded-xl">
+<span class="material-symbols-outlined text-slate-500 text-[20px]">store</span>
+<select class="bg-transparent text-slate-800 text-sm font-semibold focus:outline-none cursor-pointer">
+<option value="chapinero">Sede Chapinero Norte</option>
+<option value="poblado">Sede Poblado Medellín</option>
+<option value="calle72">Sede Calle 72 Barranquilla</option>
+</select>
+</div>
+<!-- Status Indicator -->
+
+</div>
+<!-- Action Buttons & Cash Register Profile -->
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-2">
+<button class="flex items-center gap-1.5 px-4 h-11 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm transition-all border border-slate-200 active:scale-95" type="button">
+<span class="material-symbols-outlined text-emerald-600 text-[20px]">lock_open</span>
+<span class="">Arqueo / Turno</span>
+</button>
+<button class="flex items-center gap-1.5 px-4 h-11 rounded-xl bg-slate-100 hover:bg-red-50 hover:text-red-700 text-slate-700 font-semibold text-sm transition-all border border-slate-200 active:scale-95" type="button">
+<span class="material-symbols-outlined text-red-500 text-[20px]">lock</span>
+<span class="">Cierre Z</span>
+</button>
+</div>
+<div class="h-6 w-px bg-slate-200 mx-1"></div>
+<div class="flex items-center gap-3 pl-1">
+<div class="flex flex-col text-right">
+<span class="text-sm font-bold text-slate-800 leading-tight">Caja Principal 01</span>
+<span class="text-xs font-semibold text-emerald-600">En línea</span>
+</div>
+<img alt="Profile" class="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-500/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8MYNlNd3sx1_3xX5kDUw4O_lwY8XFjxVL5-UL_X4C29O5tdnuX0BP4jit3AexwSC5uyYT8sJt-ir_52goaL5B3NMFVdVSWAtdTDIWKmWDzJl4pjs3x_qzAbsj5RmVKSXfudPlPvBMXbzrFs1kcSgBKDUC7w3TwTYbpMJlQHiFv77C0j-wID9fI5b4X8H2rYuhDMCB8uvRBGsApySwGjSzcv6JzCRWbuoOXunBvw">
+</div>
+</div>
+</header>
+<main class="w-full pt-16 bg-slate-50">
+<div class="flex flex-col w-full h-[calc(100vh-4rem)] overflow-hidden">
+<!-- Operational Info Sub-bar -->
+<div class="w-full bg-white border-b border-slate-200 px-6 py-2 flex items-center justify-between">
+<div class="flex items-center gap-4 text-xs font-medium text-slate-600">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-emerald-600 text-[18px]">verified_user</span>
+<span class="">Turno: <strong class="text-slate-900 font-bold">Carolina M.</strong></span>
+</div>
+<span class="text-slate-300">|</span>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-amber-600 text-[18px]">account_balance_wallet</span>
+<span class="">Base inicial: <strong class="text-amber-800 font-bold font-label-data">$150.000 COP</strong></span>
+</div>
+
+
+</div>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Modo Alta Rotación POS
+            </span>
+</div>
+</div>
+<!-- Touch Split Workspace: Catalog (Left) + Ticket (Right) -->
+<div class="flex-1 flex overflow-hidden">
+<!-- LEFT: Product Matrix & Fast Controls -->
+<div class="flex-1 flex flex-col min-w-0 bg-slate-50">
+<!-- Filter Bar & Search -->
+<div class="p-4 flex flex-col gap-3 bg-white border-b border-slate-200">
+<div class="flex items-center gap-3 flex-wrap">
+<!-- Business Line Switcher -->
+<div class="bg-slate-100 p-1 rounded-xl flex items-center gap-1 border border-slate-200">
+<button class="px-4 h-11 rounded-lg bg-white text-slate-900 font-bold text-sm flex items-center gap-2 shadow-sm border border-slate-200/60 transition-all active:scale-95" type="button">
+<span class="material-symbols-outlined text-amber-600 text-[20px]">bakery_dining</span>
+<span class="">Panadería Don Pedro</span>
+</button>
+<button class="px-4 h-11 rounded-lg bg-transparent hover:bg-slate-200 text-slate-600 font-semibold text-sm flex items-center gap-2 transition-all active:scale-95" type="button">
+<span class="material-symbols-outlined text-slate-500 text-[20px]">outdoor_grill</span>
+<span class="">Asadero La Brasa</span>
+</button>
+</div>
+<!-- Touch Search Bar -->
+<div class="flex-1 min-w-[280px] relative">
+<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">search</span>
+</div>
+<input class="w-full h-11 pl-10 pr-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all" placeholder="Buscar producto por nombre o código de barras (F2)..." type="text">
+</div>
+<!-- Base de Caja Action Button -->
+<button class="px-4 h-11 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 active:scale-95 text-sm font-semibold flex items-center gap-2 border border-slate-200 transition-all" type="button">
+<span class="material-symbols-outlined text-emerald-600 text-[20px]">price_change</span>
+<span class="">Apertura / Base</span>
+<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md text-xs font-bold font-label-data">$150.000</span>
+</button>
+</div>
+<!-- Category Horizontal Pill Track -->
+<div class="flex items-center gap-2 overflow-x-auto pb-0.5">
+<button class="px-4 h-11 rounded-xl bg-emerald-600 text-white font-semibold text-sm flex items-center gap-2 shrink-0 shadow-sm active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-[19px]">grid_view</span>
+<span class="">Todos</span>
+<span class="bg-white/20 text-white px-2 py-0.5 rounded-full text-xs font-bold">48</span>
+</button>
+<button class="px-4 h-11 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm flex items-center gap-2 shrink-0 border border-slate-200 active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-amber-600 text-[19px]">breakfast_dining</span>
+<span class="">Panadería &amp; Hojaldres</span>
+</button>
+<button class="px-4 h-11 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm flex items-center gap-2 shrink-0 border border-slate-200 active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-indigo-600 text-[19px]">local_cafe</span>
+<span class="">Bebidas &amp; Cafés</span>
+</button>
+<button class="px-4 h-11 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm flex items-center gap-2 shrink-0 border border-slate-200 active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-teal-600 text-[19px]">egg_alt</span>
+<span class="">Desayunos</span>
+</button>
+<button class="px-4 h-11 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm flex items-center gap-2 shrink-0 border border-slate-200 active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-orange-600 text-[19px]">dinner_dining</span>
+<span class="">Combos Pollo Asado</span>
+</button>
+<button class="px-4 h-11 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm flex items-center gap-2 shrink-0 border border-slate-200 active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-slate-500 text-[19px]">lunch_dining</span>
+<span class="">Porciones &amp; Extras</span>
+</button>
+</div>
+</div>
+<!-- Product Cards Grid: Ultra-Clean Crisp White Cards -->
+<div class="flex-1 overflow-y-auto p-4 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3.5">
+<!-- Card 1 -->
+<div class="cursor-pointer group flex flex-col justify-between bg-white hover:bg-slate-50 border border-slate-200 hover:border-emerald-400 rounded-xl overflow-hidden shadow-sm hover:shadow transition-all active:scale-[0.98]" onclick="addDemoItem('Pan de Bono Tradicional', 3500)">
+<div class="relative w-full h-32 bg-slate-100 overflow-hidden">
+<img alt="Pan de Bono Tradicional" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLYFzMA7lN9CuL6HoW_0BSGjFB5WwVGsY8mlPx5rohfEJaBKXpTZ6D1DUqiZ2uXVhN6qvnkSKLX3CmQdsDZGPpP65NKbGRPuaac_jURiEJA33h3dqdcTM7rZ8qfomy19XF_hzzz5BTOLqqhwS9WTWcm-dSEnaEwyxXUrjPBfIey9WbdNTbz2S2hSKbOkq1dpHbOM9C5AiQ0WVP9v0dVzoIY3hnG3As8JEr2bvsjw">
+<span class="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-white/95 backdrop-blur text-emerald-800 font-bold text-[11px] shadow-sm border border-slate-200">
+                    Stock: 64
+                  </span>
+<span class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-slate-900/70 text-white font-mono text-[10px]">
+                    #PBN-01
+                  </span>
+</div>
+<div class="p-3 flex flex-col justify-between gap-2">
+<span class="font-bold text-slate-800 text-sm leading-snug line-clamp-1">Pan de Bono Tradicional</span>
+<div class="flex items-center justify-between pt-1 border-t border-slate-100">
+<span class="font-extrabold text-base text-emerald-700 font-label-data">$3.500 <span class="text-xs font-normal text-slate-400">COP</span></span>
+<span class="material-symbols-outlined text-emerald-600 bg-emerald-50 group-hover:bg-emerald-600 group-hover:text-white p-1.5 rounded-lg text-[18px] transition-all">add_shopping_cart</span>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="cursor-pointer group flex flex-col justify-between bg-white hover:bg-slate-50 border border-slate-200 hover:border-emerald-400 rounded-xl overflow-hidden shadow-sm hover:shadow transition-all active:scale-[0.98]" onclick="addDemoItem('Café Campesino Grande', 3500)">
+<div class="relative w-full h-32 bg-slate-100 overflow-hidden">
+<img alt="Café Campesino Grande" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIn7IF6pkTVTzMUh8vNPbfivhInbpcZGR8DwFRR31Ec4B9BkQcxy44vlOaqD8ZVQtq8-h2wb7xXuBqlJ_QZGN23aAlD7fPCXfxdbRDf9JxFRlQ4ve-BZCpDdVYkIRb5CcFpJyoknZh68k9LWCG-VyNMB-rj8kPDD9yR_Pp9YAzCySRX9eFpzHIMaOmPyw_MPoDlHzsQD5zbxrKvNn3O4CYSDFpgr0Tz16SomJJ5w">
+<span class="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-white/95 backdrop-blur text-emerald-800 font-bold text-[11px] shadow-sm border border-slate-200">
+                    Stock: 120
+                  </span>
+<span class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-slate-900/70 text-white font-mono text-[10px]">
+                    #CAF-03
+                  </span>
+</div>
+<div class="p-3 flex flex-col justify-between gap-2">
+<span class="font-bold text-slate-800 text-sm leading-snug line-clamp-1">Café Campesino Grande</span>
+<div class="flex items-center justify-between pt-1 border-t border-slate-100">
+<span class="font-extrabold text-base text-emerald-700 font-label-data">$3.500 <span class="text-xs font-normal text-slate-400">COP</span></span>
+<span class="material-symbols-outlined text-emerald-600 bg-emerald-50 group-hover:bg-emerald-600 group-hover:text-white p-1.5 rounded-lg text-[18px] transition-all">add_shopping_cart</span>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="cursor-pointer group flex flex-col justify-between bg-white hover:bg-slate-50 border border-slate-200 hover:border-emerald-400 rounded-xl overflow-hidden shadow-sm hover:shadow transition-all active:scale-[0.98]" onclick="addDemoItem('Combo 1/2 Pollo Asado + Papas + Arepa', 28000)">
+<div class="relative w-full h-32 bg-slate-100 overflow-hidden">
+<img alt="Combo 1/2 Pollo Asado + Papas" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCB8gBAH-1UF8yWsOjrp5NyjlbZKaxUrrHU8SIuk-TWVNmNS8Mx-8IpxHo8ZORqkTjVqGlHN4xjcruWg6ZIriZyZjRQt9NiltCEDZj820qBqEJv2iXKECKaLeoJSKsd4a1-Im6geEXELPMZaYhwyypf8OsZdIXdRzG1n4D80C4sKHOjAcFh4HF-FEhLpFm9QWM3kuYIXe5BeTGL7GlJXJCcESKUVfGNiDl5mpuR-w">
+<span class="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-white/95 backdrop-blur text-emerald-800 font-bold text-[11px] shadow-sm border border-slate-200">
+                    Stock: 18
+                  </span>
+<span class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-slate-900/70 text-white font-mono text-[10px]">
+                    #ASAD-02
+                  </span>
+</div>
+<div class="p-3 flex flex-col justify-between gap-2">
+<span class="font-bold text-slate-800 text-sm leading-snug line-clamp-1">Combo 1/2 Pollo + Papas</span>
+<div class="flex items-center justify-between pt-1 border-t border-slate-100">
+<span class="font-extrabold text-base text-emerald-700 font-label-data">$28.000 <span class="text-xs font-normal text-slate-400">COP</span></span>
+<span class="material-symbols-outlined text-emerald-600 bg-emerald-50 group-hover:bg-emerald-600 group-hover:text-white p-1.5 rounded-lg text-[18px] transition-all">add_shopping_cart</span>
+</div>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="cursor-pointer group flex flex-col justify-between bg-white hover:bg-slate-50 border border-slate-200 hover:border-emerald-400 rounded-xl overflow-hidden shadow-sm hover:shadow transition-all active:scale-[0.98]" onclick="addDemoItem('Gaseosa Postobón Manzana 1.5L', 6500)">
+<div class="relative w-full h-32 bg-slate-100 overflow-hidden">
+<img alt="Postobón Manzana 1.5L" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0JXfeHoj5_b2Ea2RQqz-DDS0JVy0vcRpO-xa9fG_mXXC7sNZu6PAx8eCpXJwvF0bGk_slwV7uQdXD55LbfeIfjDM5kQXmzSZgq0U1fUC1lFt4dwYM9Q_0rGrLSbisbCbx35Ts1hcxWaMk3T4lXM7FdfHwMlXdWfejsssabhGFJv0C4R12ewT6rJeYsJjQ4loRf2Fw9AAJTs2wibQAdHnnFTK9XUYzf4bCB7dTPg">
+<span class="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-white/95 backdrop-blur text-emerald-800 font-bold text-[11px] shadow-sm border border-slate-200">
+                    Stock: 35
+                  </span>
+<span class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-slate-900/70 text-white font-mono text-[10px]">
+                    #BEB-15
+                  </span>
+</div>
+<div class="p-3 flex flex-col justify-between gap-2">
+<span class="font-bold text-slate-800 text-sm leading-snug line-clamp-1">Postobón Manzana 1.5L</span>
+<div class="flex items-center justify-between pt-1 border-t border-slate-100">
+<span class="font-extrabold text-base text-emerald-700 font-label-data">$6.500 <span class="text-xs font-normal text-slate-400">COP</span></span>
+<span class="material-symbols-outlined text-emerald-600 bg-emerald-50 group-hover:bg-emerald-600 group-hover:text-white p-1.5 rounded-lg text-[18px] transition-all">add_shopping_cart</span>
+</div>
+</div>
+</div>
+<!-- Card 5 -->
+<div class="cursor-pointer group flex flex-col justify-between bg-white hover:bg-slate-50 border border-slate-200 hover:border-emerald-400 rounded-xl overflow-hidden shadow-sm hover:shadow transition-all active:scale-[0.98]" onclick="addDemoItem('Almojábana Bogotana Casera', 4000)">
+<div class="relative w-full h-32 bg-slate-100 overflow-hidden">
+<img alt="Almojábana Bogotana Casera" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdyX77y8rS8UT9d94lkMG1O2jaD56B8VcbU9ArdJJk9yy02uiF6sivOZnRHNmI2YSV-290vHpwaKZWzGFsoMnCWR368TbyxOAw5UYs3zHrwQyz3R3tV6UT5Pqj6judx-V8mDB8LUDWjVB2plLkGi3zhASmvoOs_bVqsJZyoFASjzmVJuB8dfnplcxJaHIDapmyMFmZ06dZePESEEL8FcmSfGq3rNwmxblqLawUEQ">
+<span class="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-white/95 backdrop-blur text-emerald-800 font-bold text-[11px] shadow-sm border border-slate-200">
+                    Stock: 42
+                  </span>
+<span class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-slate-900/70 text-white font-mono text-[10px]">
+                    #ALM-05
+                  </span>
+</div>
+<div class="p-3 flex flex-col justify-between gap-2">
+<span class="font-bold text-slate-800 text-sm leading-snug line-clamp-1">Almojábana Bogotana Casera</span>
+<div class="flex items-center justify-between pt-1 border-t border-slate-100">
+<span class="font-extrabold text-base text-emerald-700 font-label-data">$4.000 <span class="text-xs font-normal text-slate-400">COP</span></span>
+<span class="material-symbols-outlined text-emerald-600 bg-emerald-50 group-hover:bg-emerald-600 group-hover:text-white p-1.5 rounded-lg text-[18px] transition-all">add_shopping_cart</span>
+</div>
+</div>
+</div>
+<!-- Card 6 -->
+<div class="cursor-pointer group flex flex-col justify-between bg-white hover:bg-slate-50 border border-slate-200 hover:border-emerald-400 rounded-xl overflow-hidden shadow-sm hover:shadow transition-all active:scale-[0.98]" onclick="addDemoItem('Empanada de Carne Crujiente + Ají', 3800)">
+<div class="relative w-full h-32 bg-slate-100 overflow-hidden">
+<img alt="Empanada de Carne + Ají" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB34NrTLgmDUEjvL1UWv7W7sytDl2Fy6X_An5wciumAvVYRIu9JcU48XEgW5P08ZFaKKXWxWwgCGhcDWUyu3T4WSgToNHZXtAID3DiWDG-_hXV1r0dy30kbKXnEBtgmQkBmQQ8W8xo11IuouTO698RT2pTgRnSAR3v8Pki7fxE7xKSJ8D70OTQRO_F3CUE8OiRRVY5LvfBbxAM192wiEtpq1Akg9e9U3HiMG8JS0A">
+<span class="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-white/95 backdrop-blur text-emerald-800 font-bold text-[11px] shadow-sm border border-slate-200">
+                    Stock: 50
+                  </span>
+<span class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-slate-900/70 text-white font-mono text-[10px]">
+                    #EMP-02
+                  </span>
+</div>
+<div class="p-3 flex flex-col justify-between gap-2">
+<span class="font-bold text-slate-800 text-sm leading-snug line-clamp-1">Empanada de Carne + Ají</span>
+<div class="flex items-center justify-between pt-1 border-t border-slate-100">
+<span class="font-extrabold text-base text-emerald-700 font-label-data">$3.800 <span class="text-xs font-normal text-slate-400">COP</span></span>
+<span class="material-symbols-outlined text-emerald-600 bg-emerald-50 group-hover:bg-emerald-600 group-hover:text-white p-1.5 rounded-lg text-[18px] transition-all">add_shopping_cart</span>
+</div>
+</div>
+</div>
+<!-- Card 7 -->
+<div class="cursor-pointer group flex flex-col justify-between bg-white hover:bg-slate-50 border border-slate-200 hover:border-emerald-400 rounded-xl overflow-hidden shadow-sm hover:shadow transition-all active:scale-[0.98]" onclick="addDemoItem('Desayuno Calentado Paisa Completo', 18500)">
+<div class="relative w-full h-32 bg-slate-100 overflow-hidden">
+<img alt="Calentado Paisa Completo" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDadp1f7CM_SD09-bXkmdTEiLWaIsb6WpU7-crc_ykz8uN50Z_hrC7fyasOTYJZFxMIEKWSKfLKgrMzkMkXWnOqfbCPzJFOgali6jrevsN_yVJEJdjbEzhSnCfUxrNIws4eGuj0HS9dVK5Alvo6ybxm7qSAlVeQ1PR3NzTW8AH4GuxRMhnwr73bsrFUqHGL7HmPu90pECkKhzWIXty94MftczYxsCA2Jtghk6Z4Xg">
+<span class="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-white/95 backdrop-blur text-emerald-800 font-bold text-[11px] shadow-sm border border-slate-200">
+                    Stock: 14
+                  </span>
+<span class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-slate-900/70 text-white font-mono text-[10px]">
+                    #DES-08
+                  </span>
+</div>
+<div class="p-3 flex flex-col justify-between gap-2">
+<span class="font-bold text-slate-800 text-sm leading-snug line-clamp-1">Calentado Paisa Completo</span>
+<div class="flex items-center justify-between pt-1 border-t border-slate-100">
+<span class="font-extrabold text-base text-emerald-700 font-label-data">$18.500 <span class="text-xs font-normal text-slate-400">COP</span></span>
+<span class="material-symbols-outlined text-emerald-600 bg-emerald-50 group-hover:bg-emerald-600 group-hover:text-white p-1.5 rounded-lg text-[18px] transition-all">add_shopping_cart</span>
+</div>
+</div>
+</div>
+<!-- Card 8 -->
+<div class="cursor-pointer group flex flex-col justify-between bg-white hover:bg-slate-50 border border-slate-200 hover:border-emerald-400 rounded-xl overflow-hidden shadow-sm hover:shadow transition-all active:scale-[0.98]" onclick="addDemoItem('Pollo Entero Asado Especial', 46000)">
+<div class="relative w-full h-32 bg-slate-100 overflow-hidden">
+<img alt="Pollo Entero Asado Especial" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBL6R0Si2ibrEeUow2SEp8acRQCu5_s1uEsLlVD1s93r9IioMfUD90zSw7QPVfQZyNGbXVege7sjKAl3QnpUJYznT6yfjK_pmzGzWnmuZKBNTuCuDjWgPk8Qw3n8I-VC0idiWQtYKp9teHd2RAHRKGtawOaa45tR4m8gLgKCaSrom13257NiPiLz6544gHCdqOXqqx35gYG-qn9bCGmPxIM3MewWqZU9luM3FFiVQ">
+<span class="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-white/95 backdrop-blur text-emerald-800 font-bold text-[11px] shadow-sm border border-slate-200">
+                    Stock: 9
+                  </span>
+<span class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-slate-900/70 text-white font-mono text-[10px]">
+                    #ASAD-01
+                  </span>
+</div>
+<div class="p-3 flex flex-col justify-between gap-2">
+<span class="font-bold text-slate-800 text-sm leading-snug line-clamp-1">Pollo Entero Asado Especial</span>
+<div class="flex items-center justify-between pt-1 border-t border-slate-100">
+<span class="font-extrabold text-base text-emerald-700 font-label-data">$46.000 <span class="text-xs font-normal text-slate-400">COP</span></span>
+<span class="material-symbols-outlined text-emerald-600 bg-emerald-50 group-hover:bg-emerald-600 group-hover:text-white p-1.5 rounded-lg text-[18px] transition-all">add_shopping_cart</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT: Persistent White Ticket Panel (Comanda Activa, 410px width) -->
+<div class="w-[410px] shrink-0 bg-white border-l border-slate-200 flex flex-col justify-between shadow-xl z-20">
+<!-- Ticket Header & Dining Mode Switcher -->
+<div class="p-4 bg-white border-b border-slate-200 flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-600 text-[24px]">receipt_long</span>
+<h2 class="font-bold text-lg text-slate-900 tracking-tight">Comanda #142</h2>
+</div>
+<span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs">Mesa 04</span>
+</div>
+<!-- Dining Mode Segmented Control -->
+<div class="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+<button class="h-10 rounded-lg bg-white text-slate-900 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all" id="mode-mesa" onclick="setMode('mesa')" type="button">
+<span class="material-symbols-outlined text-emerald-600 text-[18px]">table_restaurant</span>
+<span class="">En Mesa</span>
+</button>
+<button class="h-10 rounded-lg bg-transparent hover:bg-slate-200 text-slate-600 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all" id="mode-llevar" onclick="setMode('llevar')" type="button">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">shopping_bag</span>
+<span class="">Para Llevar</span>
+</button>
+</div>
+</div>
+<!-- Ticket Items List -->
+<div class="flex-1 overflow-y-auto p-3 flex flex-col gap-2 bg-slate-50/60">
+<!-- Item 1 -->
+<div class="bg-white p-3 rounded-xl border border-slate-200 flex flex-col gap-2 shadow-xs">
+<div class="flex items-start justify-between gap-2">
+<div class="flex-1 min-w-0">
+<span class="font-bold text-sm text-slate-800 block truncate">Pan de Bono Tradicional</span>
+<span class="text-xs text-slate-500 font-label-data">$3.500 c/u</span>
+</div>
+<span class="font-extrabold text-sm text-emerald-700 font-label-data">$10.500</span>
+</div>
+<div class="flex items-center justify-between pt-1 border-t border-slate-100">
+<div class="flex items-center gap-1.5">
+<button class="w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-base flex items-center justify-center active:scale-90 transition-all border border-slate-200" type="button">-</button>
+<span class="w-7 text-center font-bold text-sm text-slate-900">3</span>
+<button class="w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-base flex items-center justify-center active:scale-90 transition-all border border-slate-200" type="button">+</button>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-10 h-10 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center active:scale-95 transition-all border border-slate-200" title="Agregar nota" type="button">
+<span class="material-symbols-outlined text-[19px]">sticky_note_2</span>
+</button>
+<button class="w-10 h-10 rounded-lg bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-600 flex items-center justify-center active:scale-95 transition-all border border-slate-200" title="Eliminar ítem" type="button">
+<span class="material-symbols-outlined text-[19px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="bg-white p-3 rounded-xl border border-slate-200 flex flex-col gap-2 shadow-xs">
+<div class="flex items-start justify-between gap-2">
+<div class="flex-1 min-w-0">
+<span class="font-bold text-sm text-slate-800 block truncate">Café Campesino Grande</span>
+<span class="text-xs text-slate-500 font-label-data">$3.500 c/u</span>
+</div>
+<span class="font-extrabold text-sm text-emerald-700 font-label-data">$7.000</span>
+</div>
+<div class="flex items-center justify-between pt-1 border-t border-slate-100">
+<div class="flex items-center gap-1.5">
+<button class="w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-base flex items-center justify-center active:scale-90 transition-all border border-slate-200" type="button">-</button>
+<span class="w-7 text-center font-bold text-sm text-slate-900">2</span>
+<button class="w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-base flex items-center justify-center active:scale-90 transition-all border border-slate-200" type="button">+</button>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-10 h-10 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center active:scale-95 transition-all border border-slate-200" title="Agregar nota" type="button">
+<span class="material-symbols-outlined text-[19px]">sticky_note_2</span>
+</button>
+<button class="w-10 h-10 rounded-lg bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-600 flex items-center justify-center active:scale-95 transition-all border border-slate-200" title="Eliminar ítem" type="button">
+<span class="material-symbols-outlined text-[19px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="bg-white p-3 rounded-xl border border-slate-200 flex flex-col gap-2 shadow-xs">
+<div class="flex items-start justify-between gap-2">
+<div class="flex-1 min-w-0">
+<span class="font-bold text-sm text-slate-800 block truncate">Combo 1/2 Pollo + Papas + Arepa</span>
+<span class="text-xs text-amber-700 font-semibold bg-amber-50 px-1.5 py-0.5 rounded inline-block">Término: Bien Dorado</span>
+</div>
+<span class="font-extrabold text-sm text-emerald-700 font-label-data">$28.000</span>
+</div>
+<div class="flex items-center justify-between pt-1 border-t border-slate-100">
+<div class="flex items-center gap-1.5">
+<button class="w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-base flex items-center justify-center active:scale-90 transition-all border border-slate-200" type="button">-</button>
+<span class="w-7 text-center font-bold text-sm text-slate-900">1</span>
+<button class="w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-base flex items-center justify-center active:scale-90 transition-all border border-slate-200" type="button">+</button>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-10 h-10 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 flex items-center justify-center active:scale-95 transition-all border border-amber-200" title="Modificar nota" type="button">
+<span class="material-symbols-outlined text-[19px]">edit_note</span>
+</button>
+<button class="w-10 h-10 rounded-lg bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-600 flex items-center justify-center active:scale-95 transition-all border border-slate-200" title="Eliminar ítem" type="button">
+<span class="material-symbols-outlined text-[19px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="bg-white p-3 rounded-xl border border-slate-200 flex flex-col gap-2 shadow-xs">
+<div class="flex items-start justify-between gap-2">
+<div class="flex-1 min-w-0">
+<span class="font-bold text-sm text-slate-800 block truncate">Postobón Manzana 1.5L</span>
+<span class="text-xs text-slate-500 font-label-data">$6.500 c/u</span>
+</div>
+<span class="font-extrabold text-sm text-emerald-700 font-label-data">$6.500</span>
+</div>
+<div class="flex items-center justify-between pt-1 border-t border-slate-100">
+<div class="flex items-center gap-1.5">
+<button class="w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-base flex items-center justify-center active:scale-90 transition-all border border-slate-200" type="button">-</button>
+<span class="w-7 text-center font-bold text-sm text-slate-900">1</span>
+<button class="w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-base flex items-center justify-center active:scale-90 transition-all border border-slate-200" type="button">+</button>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-10 h-10 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center active:scale-95 transition-all border border-slate-200" title="Agregar nota" type="button">
+<span class="material-symbols-outlined text-[19px]">sticky_note_2</span>
+</button>
+<button class="w-10 h-10 rounded-lg bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-600 flex items-center justify-center active:scale-95 transition-all border border-slate-200" title="Eliminar ítem" type="button">
+<span class="material-symbols-outlined text-[19px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Financial Breakdown & Emerald Checkout Button -->
+<div class="p-4 bg-white border-t border-slate-200 flex flex-col gap-3 shadow-[0_-4px_16px_rgba(0,0,0,0.03)]">
+<!-- Tax breakdown details -->
+<div class="flex flex-col gap-1.5 text-xs text-slate-600">
+<div class="flex justify-between items-center">
+<span class="">Subtotal Gravable</span>
+<span class="font-bold text-slate-900 font-label-data">$43.697 COP</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="flex items-center gap-1">
+<span class="">Impoconsumo (8%) / IVA (19%)</span>
+<span class="material-symbols-outlined text-slate-400 text-[14px]">info</span>
+</span>
+<span class="font-bold text-slate-900 font-label-data">$8.303 COP</span>
+</div>
+<div class="flex justify-between items-center text-slate-400">
+<span class="">Descuentos aplicados</span>
+<span class="font-semibold text-emerald-600 font-label-data">$0 COP</span>
+</div>
+</div>
+<!-- High-Contrast Total Display Container -->
+<div class="bg-slate-50 border border-slate-200/90 p-3.5 rounded-xl flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Total a Pagar</span>
+<span class="text-xs text-slate-700 font-medium">Pesos Colombianos</span>
+</div>
+<div class="text-right">
+<span class="text-3xl font-extrabold text-slate-900 font-label-data tracking-tight leading-none">$52.000</span>
+</div>
+</div>
+<!-- Auxiliary Action Buttons (Hold / Cancel) -->
+<div class="grid grid-cols-2 gap-2">
+<button class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all border border-slate-200" type="button">
+<span class="material-symbols-outlined text-amber-600 text-[18px]">pause_circle</span>
+<span class="">En Espera</span>
+</button>
+<button class="h-11 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-700 text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all border border-slate-200" type="button">
+<span class="material-symbols-outlined text-red-500 text-[18px]">cancel</span>
+<span class="">Anular Orden</span>
+</button>
+</div>
+<!-- GIANT CHECKOUT BUTTON (Vibrant Emerald #059669 / #10b981) -->
+<button class="w-full h-14 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-base tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 active:scale-[0.98] transition-all cursor-pointer" id="btn-cobrar" onclick="openCheckoutModal()" type="button">
+<span class="material-symbols-outlined text-[26px]">payments</span>
+<span class="">COBRAR $52.000 COP</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Cash Tender & Quick Settlement Modal: Clean Minimalist Dialog -->
+<div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" id="checkout-modal">
+<div class="w-full max-w-3xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+<!-- Modal Header -->
+<div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="p-2 rounded-xl bg-emerald-600 text-white shadow-sm">
+<span class="material-symbols-outlined text-[22px]">point_of_sale</span>
+</div>
+<div class="flex flex-col">
+<h3 class="font-bold text-lg text-slate-900 leading-tight">Cobro Rápido en Efectivo &amp; Medios</h3>
+<span class="text-xs text-slate-500">Orden #142 | Mesa 04</span>
+</div>
+</div>
+<button class="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all" onclick="closeCheckoutModal()" type="button">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Modal Body -->
+<div class="p-6 grid grid-cols-1 md:grid-cols-12 gap-6 bg-white">
+<!-- Left Column: Total, Received Input & Change Display (5 cols) -->
+<div class="md:col-span-5 flex flex-col justify-between gap-4">
+<div class="flex flex-col gap-3">
+<div class="bg-slate-50 border border-slate-200 p-3.5 rounded-xl">
+<span class="text-xs font-semibold text-slate-500">Total Cuenta</span>
+<div class="text-2xl font-extrabold text-slate-900 font-label-data mt-0.5">$52.000 <span class="text-xs font-normal text-slate-500">COP</span></div>
+</div>
+<div class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl">
+<span class="text-xs font-bold text-emerald-800">Efectivo Recibido</span>
+<div class="text-3xl font-extrabold text-emerald-700 font-label-data leading-tight mt-0.5" id="tender-display">$100.000</div>
+</div>
+<div class="bg-amber-50 border border-amber-200 p-3.5 rounded-xl">
+<span class="text-xs font-bold text-amber-800">Cambio / Vueltas</span>
+<div class="text-2xl font-extrabold text-amber-700 font-label-data leading-tight mt-0.5" id="change-display">$48.000 COP</div>
+</div>
+</div>
+<!-- Payment Methods Selector -->
+<div class="grid grid-cols-3 gap-2">
+<button class="h-12 rounded-xl bg-emerald-600 text-white font-bold text-xs flex flex-col items-center justify-center shadow-xs" type="button">
+<span class="material-symbols-outlined text-[18px]">attach_money</span>
+<span class="">Efectivo</span>
+</button>
+<button class="h-12 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs flex flex-col items-center justify-center border border-slate-200" type="button">
+<span class="material-symbols-outlined text-indigo-600 text-[18px]">qr_code_2</span>
+<span class="">Nequi / Davi</span>
+</button>
+<button class="h-12 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs flex flex-col items-center justify-center border border-slate-200" type="button">
+<span class="material-symbols-outlined text-slate-700 text-[18px]">credit_card</span>
+<span class="">Datáfono</span>
+</button>
+</div>
+</div>
+<!-- Right Column: Colombian Banknotes Quick-Keys & Numeric Pad (7 cols) -->
+<div class="md:col-span-7 flex flex-col gap-4">
+<div class="flex flex-col gap-2">
+<span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Billetes Colombianos Rápidos</span>
+<div class="grid grid-cols-3 gap-2">
+<button class="h-12 rounded-xl bg-slate-100 hover:bg-emerald-50 hover:border-emerald-300 border border-slate-200 text-slate-800 flex flex-col items-center justify-center active:scale-95 transition-all" onclick="setTender(52000)" type="button">
+<span class="text-xs font-bold text-emerald-700">Exacto</span>
+<span class="text-[11px] font-mono text-slate-500">$52.000</span>
+</button>
+<button class="h-12 rounded-xl bg-slate-100 hover:bg-amber-50 hover:border-amber-300 border border-slate-200 text-slate-800 flex flex-col items-center justify-center active:scale-95 transition-all" onclick="setTender(60000)" type="button">
+<span class="text-xs font-bold text-amber-700">Próx $10k</span>
+<span class="text-[11px] font-mono text-slate-500">$60.000</span>
+</button>
+<button class="h-12 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onclick="setTender(10000)" type="button">
+                      $10.000
+                    </button>
+<button class="h-12 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onclick="setTender(20000)" type="button">
+                      $20.000
+                    </button>
+<button class="h-12 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onclick="setTender(50000)" type="button">
+                      $50.000
+                    </button>
+<button class="h-12 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onclick="setTender(100000)" type="button">
+                      $100.000
+                    </button>
+</div>
+</div>
+<!-- Numpad Grid -->
+<div class="grid grid-cols-3 gap-1.5 bg-slate-100 p-2 rounded-xl border border-slate-200">
+<button class="h-11 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 font-bold text-base shadow-xs" onclick="appendNum('1')">1</button>
+<button class="h-11 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 font-bold text-base shadow-xs" onclick="appendNum('2')">2</button>
+<button class="h-11 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 font-bold text-base shadow-xs" onclick="appendNum('3')">3</button>
+<button class="h-11 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 font-bold text-base shadow-xs" onclick="appendNum('4')">4</button>
+<button class="h-11 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 font-bold text-base shadow-xs" onclick="appendNum('5')">5</button>
+<button class="h-11 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 font-bold text-base shadow-xs" onclick="appendNum('6')">6</button>
+<button class="h-11 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 font-bold text-base shadow-xs" onclick="appendNum('7')">7</button>
+<button class="h-11 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 font-bold text-base shadow-xs" onclick="appendNum('8')">8</button>
+<button class="h-11 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 font-bold text-base shadow-xs" onclick="appendNum('9')">9</button>
+<button class="h-11 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold text-xs" onclick="clearTender()">Borrar</button>
+<button class="h-11 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 font-bold text-base shadow-xs" onclick="appendNum('0')">0</button>
+<button class="h-11 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 font-bold text-sm shadow-xs font-mono" onclick="appendNum('000')">000</button>
+</div>
+</div>
+</div>
+<!-- Modal Footer -->
+<div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+<button class="px-5 h-12 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-semibold text-sm border border-slate-200 transition-all" onclick="closeCheckoutModal()" type="button">
+                Cancelar
+              </button>
+<button class="px-6 h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center gap-2 active:scale-95 shadow-md shadow-emerald-600/20 transition-all" onclick="finishSale()" type="button">
+<span class="material-symbols-outlined text-[20px]">receipt</span>
+<span class="">Finalizar e Imprimir Ticket</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Notification Toast -->
+<div class="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3.5 rounded-xl shadow-xl flex items-center gap-2.5 transform translate-y-32 transition-transform duration-300 z-50 border border-slate-800" id="toast-pos">
+<span class="material-symbols-outlined text-emerald-400 text-[22px]">task_alt</span>
+<span class="text-sm font-semibold" id="toast-msg">Venta finalizada con éxito</span>
+</div>
+</div>
+<script>
+        let currentTotal = 52000;
+        let currentTender = 100000;
+
+        function updateChangeDisplay() {
+          const diff = currentTender - currentTotal;
+          const tenderEl = document.getElementById('tender-display');
+          const changeEl = document.getElementById('change-display');
+          
+          if (tenderEl) {
+            tenderEl.innerText = '$' + currentTender.toLocaleString('es-CO');
+          }
+          if (changeEl) {
+            if (diff >= 0) {
+              changeEl.innerText = '$' + diff.toLocaleString('es-CO') + ' COP';
+              changeEl.classList.remove('text-red-600');
+              changeEl.classList.add('text-amber-700');
+            } else {
+              changeEl.innerText = 'Faltan: $' + Math.abs(diff).toLocaleString('es-CO');
+              changeEl.classList.remove('text-amber-700');
+              changeEl.classList.add('text-red-600');
+            }
+          }
+        }
+
+        function setTender(val) {
+          currentTender = val;
+          updateChangeDisplay();
+        }
+
+        function clearTender() {
+          currentTender = 0;
+          updateChangeDisplay();
+        }
+
+        function appendNum(numStr) {
+          let currentStr = currentTender.toString();
+          if (currentTender === 0) {
+            currentStr = numStr;
+          } else {
+            currentStr += numStr;
+          }
+          currentTender = parseInt(currentStr, 10) || 0;
+          updateChangeDisplay();
+        }
+
+        function openCheckoutModal() {
+          const modal = document.getElementById('checkout-modal');
+          if (modal) {
+            modal.classList.remove('hidden');
+            updateChangeDisplay();
+          }
+        }
+
+        function closeCheckoutModal() {
+          const modal = document.getElementById('checkout-modal');
+          if (modal) {
+            modal.classList.add('hidden');
+          }
+        }
+
+        function finishSale() {
+          closeCheckoutModal();
+          showToast('¡Pago recibido! Factura #AND-10482 impresa');
+        }
+
+        function showToast(msg) {
+          const toast = document.getElementById('toast-pos');
+          const msgEl = document.getElementById('toast-msg');
+          if (toast && msgEl) {
+            msgEl.innerText = msg;
+            toast.classList.remove('translate-y-32');
+            setTimeout(() => {
+              toast.classList.add('translate-y-32');
+            }, 3500);
+          }
+        }
+
+        function addDemoItem(name, price) {
+          showToast('Añadido: ' + name + ' ($' + price.toLocaleString('es-CO') + ')');
+        }
+
+        function setMode(mode) {
+          const btnMesa = document.getElementById('mode-mesa');
+          const btnLlevar = document.getElementById('mode-llevar');
+          if (!btnMesa || !btnLlevar) return;
+
+          if (mode === 'mesa') {
+            btnMesa.className = 'h-10 rounded-lg bg-white text-slate-900 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all';
+            btnLlevar.className = 'h-10 rounded-lg bg-transparent hover:bg-slate-200 text-slate-600 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all';
+          } else {
+            btnLlevar.className = 'h-10 rounded-lg bg-white text-slate-900 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all';
+            btnMesa.className = 'h-10 rounded-lg bg-transparent hover:bg-slate-200 text-slate-600 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all';
+          }
+        }
+      </script>
+</main>
+</div>
+
+
+</body></html>

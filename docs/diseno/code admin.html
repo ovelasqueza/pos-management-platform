@@ -1,0 +1,817 @@
+<!DOCTYPE html><html class="light" lang="es"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<meta content="web_dashboard" name="shell-type">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+    @layer base {
+      html, body { margin: 0; padding: 0; }
+      body { overscroll-behavior: none; }
+      main > :first-child { margin-top: 0 !important; }
+      main > :last-child { margin-bottom: 0 !important; }
+    }
+    ::-webkit-scrollbar { display: none; }
+  </style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-secondary": "#ffffff",
+            "error-container": "#fee2e2",
+            "on-surface": "#0f172a",
+            "on-tertiary": "#ffffff",
+            "error": "#dc2626",
+            "tertiary": "#006947",
+            "inverse-surface": "#1e293b",
+            "on-primary": "#ffffff",
+            "inverse-primary": "#68dba9",
+            "surface-tint": "#006c4a",
+            "surface-container": "#ffffff",
+            "secondary-container": "#eff6ff",
+            "on-surface-variant": "#64748b",
+            "surface": "#f8fafc",
+            "tertiary-container": "#00855b",
+            "outline": "#cbd5e1",
+            "outline-variant": "#e2e8f0",
+            "on-background": "#0f172a",
+            "surface-container-high": "#f1f5f9",
+            "background": "#ffffff",
+            "on-secondary-container": "#1e40af",
+            "primary-container": "#00855d",
+            "surface-container-lowest": "#ffffff",
+            "secondary": "#475569",
+            "on-primary-container": "#ffffff",
+            "surface-container-low": "#f8fafc",
+            "primary": "#059669"
+          },
+          fontFamily: {
+            "headline-sm": ["Hanken Grotesk", "sans-serif"],
+            "body-md": ["Hanken Grotesk", "sans-serif"],
+            "label-data": ["JetBrains Mono", "monospace"],
+            "body-lg": ["Hanken Grotesk", "sans-serif"],
+            "display-currency": ["Hanken Grotesk", "sans-serif"],
+            "headline-lg": ["Hanken Grotesk", "sans-serif"],
+            "body-sm": ["Hanken Grotesk", "sans-serif"],
+            "headline-md": ["Hanken Grotesk", "sans-serif"]
+          },
+          spacing: {
+            "space-xs": "0.25rem",
+            "space-sm": "0.5rem",
+            "space-md": "0.75rem",
+            "space-lg": "1rem",
+            "space-xl": "1.5rem",
+            "space-2xl": "2rem"
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-[#f8fafc] font-body-md text-slate-800 antialiased select-none min-h-screen">
+<!-- Sidebar -->
+<aside class="fixed left-0 top-0 h-full w-64 bg-white border-r border-slate-200 z-50 flex flex-col justify-between py-space-lg shadow-sm">
+<div class="flex flex-col gap-6">
+<!-- Logo Brand -->
+<div class="px-space-xl flex items-center gap-3 h-12">
+<div class="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm shrink-0">
+<span class="material-symbols-outlined text-[24px]">point_of_sale</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-base font-bold text-slate-900 tracking-tight leading-none">ANDINA POS</span>
+<span class="text-[11px] font-semibold text-emerald-600 tracking-wider mt-0.5">COLOMBIA FISCAL</span>
+</div>
+</div>
+<!-- Navigation -->
+<nav class="flex flex-col gap-1 px-3">
+<a class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium transition-colors" data-path="terminal-pos" href="#">
+<span class="material-symbols-outlined text-[20px] text-slate-400">add_shopping_cart</span>
+<span class="text-sm">Caja Rápida POS</span>
+</a>
+<a class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium transition-colors" data-path="cobro-y-vueltas" href="#">
+<span class="material-symbols-outlined text-[20px] text-slate-400">payments</span>
+<span class="text-sm">Cobro &amp; Vueltas</span>
+</a>
+<a aria-current="page" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg bg-emerald-50 text-emerald-700 font-semibold border border-emerald-100/60 shadow-sm transition-all" data-path="panel-administrador" href="#">
+<span class="material-symbols-outlined text-[20px] text-emerald-600">query_stats</span>
+<span class="text-sm">Administración</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Shift Info & Switch -->
+<div class="px-3 flex flex-col gap-2.5">
+<div class="bg-slate-50 border border-slate-200/80 px-3.5 py-3 rounded-xl flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<span class="text-xs font-semibold text-slate-500">Turno #04</span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Abierto
+          </span>
+</div>
+<span class="text-xs text-slate-700 font-medium truncate">Cajero: Laura Mora</span>
+</div>
+<a class="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-sm transition-all" data-path="inicio-de-sesion" href="#">
+<span class="material-symbols-outlined text-rose-500 text-[18px]">logout</span>
+<span class="">Cambio de Turno</span>
+</a>
+</div>
+</aside>
+<!-- Main Container -->
+<div class="pl-64 flex flex-col min-h-screen">
+<!-- Header -->
+<header class="fixed top-0 left-64 right-0 h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 z-40 flex items-center justify-between px-space-xl">
+<div class="flex items-center gap-3">
+<!-- Selector Sede Actual -->
+<div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-slate-800 text-sm">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">store</span>
+<select class="bg-transparent text-slate-800 font-semibold text-xs focus:outline-none cursor-pointer pr-1">
+<option value="chapinero">Sede Chapinero Norte</option>
+<option value="poblado">Sede Poblado Medellín</option>
+<option value="calle72">Sede Calle 72 Barranquilla</option>
+</select>
+</div>
+<!-- Status DIAN -->
+
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-sm transition-all active:scale-95" onclick="openCashAuditModal()" type="button">
+<span class="material-symbols-outlined text-emerald-600 text-[18px]">lock_open</span>
+<span class="">Arqueo / Turno</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-semibold shadow-sm transition-all active:scale-95" type="button">
+<span class="material-symbols-outlined text-rose-500 text-[18px]">lock</span>
+<span class="">Cierre Z</span>
+</button>
+<div class="h-6 w-px bg-slate-200 mx-1"></div>
+<!-- Profile / Status -->
+<div class="flex items-center gap-2.5">
+<div class="flex flex-col text-right">
+<span class="text-xs font-semibold text-slate-900 leading-tight">Caja Principal 01</span>
+<span class="text-[11px] text-emerald-600 font-medium">En línea</span>
+</div>
+<img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-emerald-500/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8MYNlNd3sx1_3xX5kDUw4O_lwY8XFjxVL5-UL_X4C29O5tdnuX0BP4jit3AexwSC5uyYT8sJt-ir_52goaL5B3NMFVdVSWAtdTDIWKmWDzJl4pjs3x_qzAbsj5RmVKSXfudPlPvBMXbzrFs1kcSgBKDUC7w3TwTYbpMJlQHiFv77C0j-wID9fI5b4X8H2rYuhDMCB8uvRBGsApySwGjSzcv6JzCRWbuoOXunBvw">
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="w-full pt-16 bg-[#f8fafc] flex-1">
+<div class="flex flex-col w-full">
+<!-- Subbar: Filtros y Selector de Sede Multisucursal -->
+<section class="bg-white border-b border-slate-200 px-space-xl py-3 flex flex-wrap items-center justify-between gap-3">
+<div class="flex flex-wrap items-center gap-3">
+<!-- Selector de Sede -->
+<div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
+<span class="material-symbols-outlined text-emerald-600 text-[18px]">hub</span>
+<span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sede:</span>
+<select class="bg-transparent text-slate-800 text-xs font-semibold focus:outline-none cursor-pointer pr-1" id="branchFilter">
+<option value="all">Todas las Sedes (Red Nacional)</option>
+<option value="chapinero">Sede Chapinero Norte (Bogotá)</option>
+<option value="poblado">Sede El Poblado (Medellín)</option>
+<option value="barranquilla">Sede Calle 72 (Barranquilla)</option>
+</select>
+</div>
+<!-- Selector de Rango Temporal -->
+<div class="inline-flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+<button class="date-filter-btn px-3 py-1 rounded-md bg-white text-slate-900 text-xs font-semibold shadow-xs transition-all" data-period="hoy" type="button">
+                Hoy
+              </button>
+<button class="date-filter-btn px-3 py-1 rounded-md text-slate-600 hover:text-slate-900 text-xs font-medium transition-all" data-period="semana" type="button">
+                Esta Semana
+              </button>
+<button class="date-filter-btn px-3 py-1 rounded-md text-slate-600 hover:text-slate-900 text-xs font-medium transition-all" data-period="mes" type="button">
+                Mes en Curso
+              </button>
+</div>
+<!-- Chip En vivo -->
+
+</div>
+<!-- Acciones Rápidas del Gerente -->
+<div class="flex items-center gap-2">
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all active:scale-95" onclick="openCashAuditModal()" type="button">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+<span class="">Auditar Arqueo / Cierre</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-all" type="button">
+<span class="material-symbols-outlined text-slate-500 text-[18px]">download</span>
+<span class="hidden sm:inline">Exportar Excel</span>
+</button>
+</div>
+</section>
+<!-- Dashboard Body Content -->
+<div class="p-6 max-w-7xl w-full mx-auto flex flex-col gap-6">
+<!-- KPI Bento Matrix -->
+<section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+<!-- KPI 1: Ventas Totales -->
+<div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Ventas Totales Hoy</span>
+<div class="flex items-baseline gap-1 mt-1.5">
+<span class="text-2xl font-bold text-slate-900 tracking-tight">$4.850.000</span>
+<span class="text-xs font-semibold text-slate-400">COP</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+<span class="material-symbols-outlined text-[22px]">payments</span>
+</div>
+</div>
+<div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+<span class="inline-flex items-center gap-0.5 text-emerald-600 font-semibold text-xs">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+                  +18.4% vs ayer
+                </span>
+<svg class="w-20 h-5 text-emerald-500" fill="none" viewBox="0 0 100 24">
+<path d="M0 20 L20 16 L40 18 L60 8 L80 11 L100 2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+</svg>
+</div>
+</div>
+<!-- KPI 2: Ticket Promedio -->
+<div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Ticket Promedio</span>
+<div class="flex items-baseline gap-1 mt-1.5">
+<span class="text-2xl font-bold text-slate-900 tracking-tight">$28.600</span>
+<span class="text-xs font-semibold text-slate-400">COP</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+<span class="material-symbols-outlined text-[22px]">receipt_long</span>
+</div>
+</div>
+<div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+<span class="inline-flex items-center gap-0.5 text-blue-600 font-semibold text-xs">
+<span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+                  +$2.400 sobre meta
+                </span>
+<span class="text-[11px] text-slate-400">Meta: $26.200</span>
+</div>
+</div>
+<!-- KPI 3: Transacciones / Comandas -->
+<div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Comandas Facturadas</span>
+<div class="flex items-baseline gap-1 mt-1.5">
+<span class="text-2xl font-bold text-slate-900 tracking-tight">170</span>
+<span class="text-xs font-semibold text-slate-400">órdenes</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
+<span class="material-symbols-outlined text-[22px]">point_of_sale</span>
+</div>
+</div>
+<div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+<span class="text-xs font-semibold text-amber-600 inline-flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[16px]">pace</span>
+                  14.2 órdenes / h
+                </span>
+<span class="text-[11px] text-slate-400">Pico: 12:45 PM</span>
+</div>
+</div>
+<!-- KPI 4: Balance Efectivo vs Digital -->
+<div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Canal de Cobro</span>
+<div class="flex items-baseline gap-1 mt-1.5">
+<span class="text-lg font-bold text-slate-900">54% Cash | 46% Digital</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+<span class="material-symbols-outlined text-[22px]">account_balance_wallet</span>
+</div>
+</div>
+<div class="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1.5">
+<div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden flex">
+<div class="bg-emerald-500 h-full" style="width: 54%"></div>
+<div class="bg-blue-500 h-full" style="width: 46%"></div>
+</div>
+<div class="flex justify-between text-[11px] text-slate-500 font-medium">
+<span class="text-emerald-700 font-semibold">Efectivo: $2.619.000</span>
+<span class="text-blue-700 font-semibold">Digital: $2.231.000</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Layout Dividido: Monitoreo & Rendimiento (8 cols) + Top Ventas & Gestión (4 cols) -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+<!-- Columna Izquierda: Monitoreo en Vivo de Cajas y Comparativa de Sedes (8 cols) -->
+<div class="xl:col-span-8 flex flex-col gap-6">
+<!-- Módulo: Arqueo y Estado de Cajas en Vivo -->
+<div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col gap-4">
+<div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">storefront</span>
+</div>
+<div>
+<h2 class="text-base font-bold text-slate-900 leading-tight">Monitoreo de Cajas &amp; Arqueo en Vivo</h2>
+<p class="text-xs text-slate-500">Control de efectivo circulante en gavetas y cuadraturas de turno</p>
+</div>
+</div>
+<button class="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-all" onclick="openCashAuditModal()" type="button">
+<span class="material-symbols-outlined text-[16px] text-emerald-600">visibility</span>
+<span class="">Inspeccionar Gavetas</span>
+</button>
+</div>
+<!-- Cards de Cajas Activas / Cerradas -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Caja 01 - Turno Abierto -->
+<div class="bg-slate-50/70 border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm">
+                          01
+                        </div>
+<div>
+<span class="text-sm font-bold text-slate-900 block leading-tight">Caja Principal Mostrador</span>
+<span class="text-xs text-slate-500">Cajera: Laura Mora (Turno #04)</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
+                        Abierto
+                      </span>
+</div>
+<div class="my-3 grid grid-cols-2 gap-3 bg-white border border-slate-200/80 p-3 rounded-lg shadow-2xs">
+<div>
+<span class="text-xs text-slate-500 block">Efectivo en Gaveta</span>
+<span class="text-base font-bold text-emerald-600">$1.420.000</span>
+</div>
+<div>
+<span class="text-xs text-slate-500 block">Fondo Inicial Base</span>
+<span class="text-sm font-semibold text-slate-800">$200.000</span>
+</div>
+</div>
+<div class="flex items-center justify-between text-xs pt-1">
+<span class="text-slate-500 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-slate-400">schedule</span>
+                        Apertura: 07:15 AM
+                      </span>
+
+</div>
+</div>
+<!-- Caja 02 - Turno Cerrado Cuadrado -->
+<div class="bg-slate-50/70 border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-sm">
+                          02
+                        </div>
+<div>
+<span class="text-sm font-bold text-slate-900 block leading-tight">Caja Domicilios &amp; Rápida</span>
+<span class="text-xs text-slate-500">Cajero: Andrés Pardo (Turno #03)</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[11px] font-semibold">
+                        Cerrado
+                      </span>
+</div>
+<div class="my-3 grid grid-cols-2 gap-3 bg-white border border-slate-200/80 p-3 rounded-lg shadow-2xs">
+<div>
+<span class="text-xs text-slate-500 block">Arqueo Declarado</span>
+<span class="text-base font-bold text-slate-900">$1.199.000</span>
+</div>
+<div>
+<span class="text-xs text-slate-500 block">Descuadre / Varianza</span>
+<span class="text-sm font-bold text-emerald-600">$0 COP (Exacto)</span>
+</div>
+</div>
+<div class="flex items-center justify-between text-xs pt-1">
+<span class="text-slate-500 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-slate-400">lock</span>
+                        Cierre Z: 02:30 PM
+                      </span>
+<span class="text-slate-700 font-medium">Acta #4092 Sellada</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Módulo: Resumen Comparativo por Sucursal -->
+<div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col gap-4">
+<div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
+<div>
+<h2 class="text-base font-bold text-slate-900">Rendimiento por Sede vs Meta Diaria</h2>
+<p class="text-xs text-slate-500">Monitoreo de ingresos operacionales y porcentaje de cumplimiento</p>
+</div>
+<span class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">
+                    Meta General: $6.000.000 COP
+                  </span>
+</div>
+<div class="flex flex-col gap-3">
+<!-- Sede 1: Chapinero -->
+<div class="bg-slate-50/70 border border-slate-200/80 p-3.5 rounded-xl flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
+                          CH
+                        </div>
+<div>
+<span class="text-sm font-bold text-slate-900">Sede Chapinero Norte</span>
+<span class="text-xs text-slate-500 ml-1.5 font-normal">Bogotá, D.C.</span>
+</div>
+</div>
+<div class="text-right">
+<span class="text-sm font-bold text-slate-900">$2.550.000</span>
+<span class="text-xs text-slate-500 block">Meta: $3.000.000 (85%)</span>
+</div>
+</div>
+<div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+<div class="bg-emerald-600 h-full rounded-full transition-all duration-700" style="width: 85%"></div>
+</div>
+</div>
+<!-- Sede 2: Poblado -->
+<div class="bg-slate-50/70 border border-slate-200/80 p-3.5 rounded-xl flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
+                          PB
+                        </div>
+<div>
+<span class="text-sm font-bold text-slate-900">Sede El Poblado</span>
+<span class="text-xs text-slate-500 ml-1.5 font-normal">Medellín, Antioquia</span>
+</div>
+</div>
+<div class="text-right">
+<span class="text-sm font-bold text-slate-900">$1.840.000</span>
+<span class="text-xs text-slate-500 block">Meta: $2.000.000 (92%)</span>
+</div>
+</div>
+<div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+<div class="bg-blue-600 h-full rounded-full transition-all duration-700" style="width: 92%"></div>
+</div>
+</div>
+<!-- Sede 3: Barranquilla -->
+<div class="bg-slate-50/70 border border-slate-200/80 p-3.5 rounded-xl flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-amber-600 text-white flex items-center justify-center font-bold text-xs">
+                          BQ
+                        </div>
+<div>
+<span class="text-sm font-bold text-slate-900">Sede Calle 72</span>
+<span class="text-xs text-slate-500 ml-1.5 font-normal">Barranquilla, Atlántico</span>
+</div>
+</div>
+<div class="text-right">
+<span class="text-sm font-bold text-slate-900">$460.000</span>
+<span class="text-xs text-slate-500 block">Meta: $600.000 (78%)</span>
+</div>
+</div>
+<div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+<div class="bg-amber-500 h-full rounded-full transition-all duration-700" style="width: 78%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Columna Derecha: Top Productos Más Vendidos & Accesos Administrativos (4 cols) -->
+<div class="xl:col-span-4 flex flex-col gap-6">
+<!-- Top Productos -->
+<div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-600 text-[22px]">local_fire_department</span>
+<h3 class="text-base font-bold text-slate-900">Top Ventas Hoy</h3>
+</div>
+<span class="text-xs text-slate-400 font-medium">Por Volumen</span>
+</div>
+<div class="flex flex-col gap-3.5">
+<!-- Producto 1 -->
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 min-w-0">
+<span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[11px] flex items-center justify-center shrink-0">1</span>
+<span class="text-xs font-semibold text-slate-800 truncate">Combo Familiar Pollo Asado</span>
+</div>
+<span class="text-xs font-bold text-slate-900 shrink-0">$2.520.000</span>
+</div>
+<div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+<div class="bg-emerald-600 h-full rounded-full" style="width: 100%"></div>
+</div>
+<div class="flex justify-between text-[11px] text-slate-400">
+<span class="">84 unidades</span>
+<span class="">52% de ingresos</span>
+</div>
+</div>
+<!-- Producto 2 -->
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 min-w-0">
+<span class="w-5 h-5 rounded-full bg-slate-100 text-slate-700 font-bold text-[11px] flex items-center justify-center shrink-0">2</span>
+<span class="text-xs font-semibold text-slate-800 truncate">Pan de Bono Especial</span>
+</div>
+<span class="text-xs font-bold text-slate-900 shrink-0">$497.000</span>
+</div>
+<div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+<div class="bg-blue-600 h-full rounded-full" style="width: 65%"></div>
+</div>
+<div class="flex justify-between text-[11px] text-slate-400">
+<span class="">142 unidades</span>
+<span class="">10.2% de ingresos</span>
+</div>
+</div>
+<!-- Producto 3 -->
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 min-w-0">
+<span class="w-5 h-5 rounded-full bg-slate-100 text-slate-700 font-bold text-[11px] flex items-center justify-center shrink-0">3</span>
+<span class="text-xs font-semibold text-slate-800 truncate">Café Campesino (Gourmet)</span>
+</div>
+<span class="text-xs font-bold text-slate-900 shrink-0">$343.000</span>
+</div>
+<div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+<div class="bg-amber-600 h-full rounded-full" style="width: 45%"></div>
+</div>
+<div class="flex justify-between text-[11px] text-slate-400">
+<span class="">98 unidades</span>
+<span class="">7.1% de ingresos</span>
+</div>
+</div>
+<!-- Producto 4 -->
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 min-w-0">
+<span class="w-5 h-5 rounded-full bg-slate-100 text-slate-700 font-bold text-[11px] flex items-center justify-center shrink-0">4</span>
+<span class="text-xs font-semibold text-slate-800 truncate">Porción Papa Criolla Salteada</span>
+</div>
+<span class="text-xs font-bold text-slate-900 shrink-0">$304.000</span>
+</div>
+<div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+<div class="bg-emerald-500 h-full rounded-full" style="width: 38%"></div>
+</div>
+<div class="flex justify-between text-[11px] text-slate-400">
+<span class="">76 unidades</span>
+<span class="">6.3% de ingresos</span>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+<span class="text-xs text-slate-500">14 categorías activas</span>
+<button class="text-emerald-700 font-semibold text-xs hover:text-emerald-800 flex items-center" type="button">
+                    Ver Menú Completo
+                    <span class="material-symbols-outlined text-[16px] ml-0.5">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Accesos Directos de Administración & Cumplimiento -->
+<div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col gap-3">
+<h3 class="text-base font-bold text-slate-900 pb-2 border-b border-slate-100">Gestión Operacional</h3>
+<div class="flex flex-col gap-2">
+<!-- 1. Alertas de Inventario / Stock Crítico -->
+<a class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50/70 border border-slate-200/70 hover:bg-slate-50 transition-all" href="#">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">inventory_2</span>
+</div>
+<div>
+<span class="text-xs font-bold text-slate-900 block leading-tight">Inventario Crítico</span>
+<span class="text-[11px] text-rose-600 font-medium">3 insumos bajo mínimo</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold">
+                      Alerta
+                    </span>
+</a>
+<!-- 2. Resolución de Facturación DIAN -->
+
+<!-- 3. Cajeros y Permisos -->
+<a class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50/70 border border-slate-200/70 hover:bg-slate-50 transition-all" href="#">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">manage_accounts</span>
+</div>
+<div>
+<span class="text-xs font-bold text-slate-900 block leading-tight">Cajeros &amp; Permisos</span>
+<span class="text-[11px] text-slate-500">6 usuarios autorizados</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Modal / Overlay: Auditoría y Cuadre de Caja (Arqueo Físico en Vivo) -->
+<div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4" id="cashAuditModal">
+<div class="bg-white rounded-2xl w-full max-w-4xl border border-slate-200 shadow-xl overflow-hidden flex flex-col max-h-[92vh]">
+<!-- Header Modal -->
+<div class="px-6 py-4 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">verified</span>
+</div>
+<div>
+<h3 class="text-base font-bold text-slate-900">Auditoría de Arqueo y Desglose de Caja</h3>
+<span class="text-xs text-slate-500">Terminal 01 - Sede Chapinero Norte | Cajera: Laura Mora</span>
+</div>
+</div>
+<button class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-all" onclick="closeCashAuditModal()" type="button">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Contenido Split: Billetes/Monedas vs Cuadre -->
+<div class="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-12 gap-6">
+<!-- Columna Izquierda: Desglose Físico Billetes Colombianos (7 cols) -->
+<div class="md:col-span-7 flex flex-col gap-3">
+<span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Conteo Físico por Denominación</span>
+<div class="grid grid-cols-1 gap-2">
+<!-- $100.000 COP -->
+<div class="flex items-center justify-between bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
+<div class="flex items-center gap-2.5">
+<span class="w-1.5 h-6 rounded bg-emerald-500"></span>
+<span class="text-sm font-bold text-slate-900">$100.000</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs text-slate-400">Cant:</span>
+<input class="denom-input w-14 bg-white border border-slate-300 text-slate-900 text-center text-xs font-bold py-1 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500" data-val="100000" min="0" type="number" value="7">
+<span class="denom-subtotal text-xs text-slate-900 w-20 text-right font-bold">$700.000</span>
+</div>
+</div>
+<!-- $50.000 COP -->
+<div class="flex items-center justify-between bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
+<div class="flex items-center gap-2.5">
+<span class="w-1.5 h-6 rounded bg-purple-500"></span>
+<span class="text-sm font-bold text-slate-900">$50.000</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs text-slate-400">Cant:</span>
+<input class="denom-input w-14 bg-white border border-slate-300 text-slate-900 text-center text-xs font-bold py-1 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500" data-val="50000" min="0" type="number" value="8">
+<span class="denom-subtotal text-xs text-slate-900 w-20 text-right font-bold">$400.000</span>
+</div>
+</div>
+<!-- $20.000 COP -->
+<div class="flex items-center justify-between bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
+<div class="flex items-center gap-2.5">
+<span class="w-1.5 h-6 rounded bg-orange-500"></span>
+<span class="text-sm font-bold text-slate-900">$20.000</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs text-slate-400">Cant:</span>
+<input class="denom-input w-14 bg-white border border-slate-300 text-slate-900 text-center text-xs font-bold py-1 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500" data-val="20000" min="0" type="number" value="10">
+<span class="denom-subtotal text-xs text-slate-900 w-20 text-right font-bold">$200.000</span>
+</div>
+</div>
+<!-- $10.000 COP -->
+<div class="flex items-center justify-between bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
+<div class="flex items-center gap-2.5">
+<span class="w-1.5 h-6 rounded bg-red-500"></span>
+<span class="text-sm font-bold text-slate-900">$10.000</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs text-slate-400">Cant:</span>
+<input class="denom-input w-14 bg-white border border-slate-300 text-slate-900 text-center text-xs font-bold py-1 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500" data-val="10000" min="0" type="number" value="8">
+<span class="denom-subtotal text-xs text-slate-900 w-20 text-right font-bold">$80.000</span>
+</div>
+</div>
+<!-- $5.000 COP -->
+<div class="flex items-center justify-between bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
+<div class="flex items-center gap-2.5">
+<span class="w-1.5 h-6 rounded bg-amber-600"></span>
+<span class="text-sm font-bold text-slate-900">$5.000</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs text-slate-400">Cant:</span>
+<input class="denom-input w-14 bg-white border border-slate-300 text-slate-900 text-center text-xs font-bold py-1 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500" data-val="5000" min="0" type="number" value="4">
+<span class="denom-subtotal text-xs text-slate-900 w-20 text-right font-bold">$20.000</span>
+</div>
+</div>
+<!-- Monedas y Fraccionario (Totalizado) -->
+<div class="flex items-center justify-between bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
+<div class="flex items-center gap-2.5">
+<span class="w-1.5 h-6 rounded bg-slate-400"></span>
+<span class="text-sm font-bold text-slate-900">Monedas ($1.000, $500, $200)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs text-slate-400">Subtotal:</span>
+<input class="denom-coins w-24 bg-white border border-slate-300 text-slate-900 text-center text-xs font-bold py-1 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500" min="0" type="number" value="20000">
+</div>
+</div>
+</div>
+</div>
+<!-- Columna Derecha: Balance Esperado vs Contado (5 cols) -->
+<div class="md:col-span-5 bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col justify-between">
+<div class="flex flex-col gap-3">
+<span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Conciliación de Cierre</span>
+<div class="flex flex-col gap-2 bg-white border border-slate-200 p-3 rounded-lg">
+<div class="flex justify-between text-xs">
+<span class="text-slate-500">Total Esperado Sistema:</span>
+<span class="text-slate-900 font-bold" id="expectedCash">$1.420.000</span>
+</div>
+<div class="flex justify-between text-xs">
+<span class="text-slate-500">Total Físico Contado:</span>
+<span class="text-emerald-700 font-bold" id="countedCash">$1.420.000</span>
+</div>
+<div class="pt-2 border-t border-slate-100 flex justify-between text-xs font-bold">
+<span class="text-slate-800">Diferencia:</span>
+<span class="text-emerald-600" id="cashDifference">$0 COP (Exacto)</span>
+</div>
+</div>
+<div class="p-3 rounded-lg bg-emerald-50 border border-emerald-100 text-slate-700 flex items-start gap-2">
+<span class="material-symbols-outlined text-emerald-600 text-[18px] shrink-0 mt-0.5">check_circle</span>
+<p class="text-xs leading-relaxed text-slate-600">
+                      El conteo coincide exactamente con el acumulado fiscal registrado en el turno actual.
+                    </p>
+</div>
+</div>
+<div class="mt-5 flex flex-col gap-2">
+<button class="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all active:scale-95" onclick="confirmAudit()" type="button">
+                    Aprobar Acta de Arqueo
+                  </button>
+<button class="w-full py-2 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-slate-900 text-xs font-medium transition-all" onclick="closeCashAuditModal()" type="button">
+                    Cancelar
+                  </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<script>
+    function openCashAuditModal() {
+      const modal = document.getElementById('cashAuditModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeCashAuditModal() {
+      const modal = document.getElementById('cashAuditModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function confirmAudit() {
+      alert('Acta de arqueo aprobada exitosamente y transmitida a la auditoría central.');
+      closeCashAuditModal();
+    }
+
+    // Micro-interacción: Cambio dinámico de botones de fecha
+    document.querySelectorAll('.date-filter-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.date-filter-btn').forEach(b => {
+          b.classList.remove('bg-white', 'text-slate-900', 'font-semibold', 'shadow-xs');
+          b.classList.add('text-slate-600', 'font-medium');
+        });
+        this.classList.add('bg-white', 'text-slate-900', 'font-semibold', 'shadow-xs');
+        this.classList.remove('text-slate-600', 'font-medium');
+      });
+    });
+
+    // Micro-interacción: Cálculo en vivo del desglose de efectivo en el modal
+    const inputs = document.querySelectorAll('.denom-input');
+    const coinsInput = document.querySelector('.denom-coins');
+    const countedEl = document.getElementById('countedCash');
+    const diffEl = document.getElementById('cashDifference');
+
+    function calculateAuditTotals() {
+      let total = 0;
+      inputs.forEach(input => {
+        const val = parseInt(input.getAttribute('data-val'), 10) || 0;
+        const count = parseInt(input.value, 10) || 0;
+        const sub = val * count;
+        const subtotalLabel = input.parentElement.querySelector('.denom-subtotal');
+        if (subtotalLabel) {
+          subtotalLabel.textContent = '$' + sub.toLocaleString('es-CO');
+        }
+        total += sub;
+      });
+
+      if (coinsInput) {
+        total += parseInt(coinsInput.value, 10) || 0;
+      }
+
+      if (countedEl) {
+        countedEl.textContent = '$' + total.toLocaleString('es-CO');
+      }
+
+      const expected = 1420000;
+      const diff = total - expected;
+
+      if (diffEl) {
+        if (diff === 0) {
+          diffEl.textContent = '$0 COP (Exacto)';
+          diffEl.className = 'text-emerald-600 font-bold';
+        } else if (diff > 0) {
+          diffEl.textContent = '+$' + diff.toLocaleString('es-CO') + ' (Sobrante)';
+          diffEl.className = 'text-blue-600 font-bold';
+        } else {
+          diffEl.textContent = '-$' + Math.abs(diff).toLocaleString('es-CO') + ' (Faltante)';
+          diffEl.className = 'text-rose-600 font-bold';
+        }
+      }
+    }
+
+    inputs.forEach(inp => inp.addEventListener('input', calculateAuditTotals));
+    if (coinsInput) coinsInput.addEventListener('input', calculateAuditTotals);
+  </script>
+
+
+</body></html>

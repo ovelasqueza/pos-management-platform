@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/* Tokens de .kiro/steering/ui.md (fuente: docs/diseno/DESIGN login.md) */
+@theme inline {
+  --color-fondo: #f8fafc;
+  --color-superficie: #ffffff;
+  --color-suave: #f1f5f9;
+  --color-borde: #e2e8f0;
+  --color-borde-activo: #cbd5e1;
+  --color-texto: #0f172a;
+  --color-texto-2: #334155;
+  --color-texto-3: #64748b;
+  --color-primario: #059669;
+  --color-primario-hover: #10b981;
+  --color-primario-activo: #047857;
+  --color-advertencia: #d97706;
+  --color-advertencia-suave: #fffbeb;
+  --color-peligro: #dc2626;
+  --color-peligro-borde: #fca5a5;
+  --color-peligro-suave: #fef2f2;
+  --color-exito-suave: #ecfdf5;
+
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  --radius-control: 0.25rem;
+  --radius-tarjeta: 0.5rem;
+  --radius-modal: 0.75rem;
+
+  --shadow-modal: 0 8px 24px -4px rgba(15, 23, 42, 0.08);
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font-family: var(--font-sans);
+}
+
+/* Números siempre alineados */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Foco visible y consistente */
+:focus-visible {
+  outline: 2px solid var(--color-primario);
+  outline-offset: 2px;
+}
+
+/* Barras de desplazamiento discretas en listas internas */
+.barra-fina {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-borde-activo) transparent;
+}
+
+/* Impresión 80 mm: solo se imprime .zona-impresion */
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .zona-impresion,
+  .zona-impresion * {
+    visibility: visible;
+  }
+  .zona-impresion {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 80mm;
+  }
+}
