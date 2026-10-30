@@ -1,0 +1,11 @@
+# Configuración de Netlify (Next.js se detecta y adapta solo con el adaptador oficial).
+# Las variables de entorno NO van aquí: se cargan en el panel de Netlify (ver docs/despliegue.md).
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  # Misma versión de Node que en desarrollo
+  NODE_VERSION = "24"
+  NPM_FLAGS = "--no-audit --no-fund"

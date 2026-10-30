@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { MARCA } from "@/lib/marca";
 import {
   BarChart3,
   Boxes,
   Building2,
-  ClipboardList,
   LayoutGrid,
   Package,
   Timer,
@@ -35,10 +35,15 @@ export function MenuAdmin({ sede }: { sede: string }) {
     >
       <Link
         href="/admin"
-        className="mb-2 hidden items-center gap-2 px-3 py-2 text-lg font-semibold md:flex"
+        className="mb-2 hidden items-center gap-2 px-3 py-2 md:flex"
+        title={MARCA.nombre}
       >
-        <ClipboardList size={22} className="text-primario" aria-hidden />
-        POS Admin
+        {/* eslint-disable-next-line @next/next/no-img-element -- ícono estático pequeño */}
+        <img src={MARCA.icono} alt="" width={32} height={32} className="rounded-lg" />
+        <span className="text-[11px] leading-tight font-bold tracking-wide text-texto-2">
+          VENTAS · FACTURACIÓN
+          <br />· CONTROL
+        </span>
       </Link>
       {SECCIONES.map(({ ruta, nombre, icono: Icono }) => {
         const href = base + ruta;

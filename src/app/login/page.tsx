@@ -1,4 +1,4 @@
-import { Store } from "lucide-react";
+import { MARCA } from "@/lib/marca";
 import { FormularioLogin } from "./FormularioLogin";
 
 const avisos: Record<string, { texto: string; tipo: "error" | "exito" }> = {
@@ -18,11 +18,10 @@ export default async function PaginaLogin({ searchParams }: PageProps<"/login">)
   return (
     <main className="flex flex-1 items-center justify-center p-4">
       <div className="w-full max-w-sm rounded-tarjeta border border-borde bg-superficie p-8">
-        <div className="mb-8 flex flex-col items-center gap-2">
-          <span className="flex size-14 items-center justify-center rounded-tarjeta bg-primario text-white">
-            <Store size={28} aria-hidden />
-          </span>
-          <h1 className="text-2xl font-semibold">POS</h1>
+        <div className="mb-8 flex flex-col items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element -- ícono estático pequeño */}
+          <img src={MARCA.icono} alt="" width={72} height={72} className="rounded-2xl" />
+          <h1 className="text-center text-sm font-bold tracking-[0.12em] text-texto-2">{MARCA.nombre}</h1>
         </div>
         <FormularioLogin aviso={aviso} />
       </div>

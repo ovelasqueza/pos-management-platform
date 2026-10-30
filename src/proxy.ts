@@ -64,5 +64,8 @@ function redirigirConCookies(request: NextRequest, base: NextResponse, destino: 
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|webp|ico)$).*)"],
+  // Archivos públicos de la PWA y estáticos: sin sesión ni redirecciones
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|offline.html|iconos/|billetes/|.*\\.(?:svg|png|jpg|jpeg|webp|ico)$).*)",
+  ],
 };

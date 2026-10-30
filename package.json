@@ -15,7 +15,8 @@
         "crear-admin": "tsx --env-file=.env.local scripts/crear-admin.ts",
         "restablecer-contrasena": "tsx --env-file=.env.local scripts/restablecer-contrasena.ts",
         "verificar-bd": "tsx --env-file=.env.local scripts/verificar-bd.ts",
-        "importar-productos": "tsx --env-file=.env.local scripts/importar-productos.ts"
+        "importar-productos": "tsx --env-file=.env.local scripts/importar-productos.ts",
+        "respaldo-bd": "tsx --env-file=.env.local scripts/respaldo-bd.ts"
     },
     "dependencies": {
         "@supabase/ssr": "0.12.7",
