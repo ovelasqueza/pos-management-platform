@@ -16,8 +16,16 @@ const opcional = (max: number) =>
     .max(max, `Máximo ${max} caracteres`)
     .transform((v) => (v === "" ? null : v));
 
+/** NIT opcional: se quitan espacios y puntos; solo números con dígito de verificación opcional. */
+const nit = z
+  .string()
+  .transform((v) => v.replace(/[\s.]/g, ""))
+  .refine((v) => v === "" || /^[0-9]{3,15}(-[0-9])?$/.test(v), "Solo números (ej.: 900123456-7)")
+  .transform((v) => (v === "" ? null : v));
+
 const camposEditables = {
   nombre: z.string().trim().min(1, "Escribe el nombre").max(80, "Máximo 80 caracteres"),
+  nit,
   ciudad: opcional(60),
   direccion: opcional(150),
   telefono: opcional(30),

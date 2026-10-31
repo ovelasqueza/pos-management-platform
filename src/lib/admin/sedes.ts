@@ -6,6 +6,7 @@ import { ordenarSedes, type TipoSede } from "@/lib/dominio/sede";
 export type Sede = {
   id: string;
   nombre: string;
+  nit: string | null;
   tipo: TipoSede;
   ciudad: string | null;
   direccion: string | null;
@@ -18,13 +19,13 @@ export const TODAS = "todas";
 /** Todas las sedes en el orden del selector (activas primero, alfabético). */
 export const listarSedes = cache(async (): Promise<Sede[]> => {
   const supabase = await crearClienteServidor();
-  let { data, error } = await supabase.from("sedes").select("id, nombre, tipo, ciudad, direccion, telefono, activa");
-  // Respaldo mientras no se ejecute la migración 10 (columna ciudad)
+  let { data, error } = await supabase.from("sedes").select("id, nombre, nit, tipo, ciudad, direccion, telefono, activa");
+  // Respaldo mientras no se ejecute la migración 12 (columna nit)
   if (error?.code === "42703") {
-    ({ data, error } = await supabase.from("sedes").select("id, nombre, tipo, direccion, telefono, activa"));
+    ({ data, error } = await supabase.from("sedes").select("id, nombre, tipo, ciudad, direccion, telefono, activa"));
   }
   if (error) throw new Error(`No se pudieron cargar las sedes: ${error.message}`);
-  return ordenarSedes((data as Omit<Sede, "ciudad">[] as Sede[]).map((s) => ({ ...s, ciudad: s.ciudad ?? null })));
+  return ordenarSedes((data as Omit<Sede, "nit">[] as Sede[]).map((s) => ({ ...s, nit: s.nit ?? null })));
 });
 
 /**

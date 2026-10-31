@@ -36,6 +36,7 @@ POS web para una empresa con varias sedes de dos tipos: **Panadería** y **Asade
 - Tipo **Panadería** o **Asadero**. El tipo no cambia después de creada.
 - Una sede con turno abierto no se puede desactivar (se indica qué cajeros lo tienen).
 - Al crear una sede quedan habilitados todos los productos de su catálogo al precio de referencia.
+- NIT opcional por sede (solo números, dígito de verificación opcional). El ticket lo imprime en la cabecera junto con "Régimen simplificado".
 
 ### Catálogo, precios y costos
 
@@ -86,9 +87,11 @@ POS web para una empresa con varias sedes de dos tipos: **Panadería** y **Asade
 - Por sede o "Todas". Rango de fechas máximo de 1 año.
 - Resumen, ventas, gastos, turnos, ventas por producto, cuadre diario, diferencias por cajero y ventas por hora.
 
-### Inventario mensual (pendiente, spec 05)
+### Inventario por fecha (pendiente, spec 05)
 
-- Conteo físico por sede y mes, valorizado con el costo de la sede. Independiente de las ventas. Solo admin. Detalles en `.kiro/specs/05-inventario-mensual/`.
+- Conteo físico por sede en una fecha, valorizado con costos. Independiente de las ventas. Solo admin. Detalles en `.kiro/specs/05-inventario/`.
+- Incluye productos de venta y **artículos de inventario** por sede (materias primas, empaques) con unidad (bulto, kilo, libra…) y cantidades con fracción (9½ bultos). Los artículos nunca aparecen en la caja.
+- Un inventario en curso por sede; se continúa hasta finalizarlo. Uno finalizado se puede volver a editar. Se descarga en Excel (CSV), sin PDF.
 
 ### Carga de productos desde el software anterior
 
@@ -98,7 +101,7 @@ POS web para una empresa con varias sedes de dos tipos: **Panadería** y **Asade
 
 ## Fuera de alcance v1
 
-Facturación electrónica DIAN, offline, recetas/materias primas, descuentos, pagos combinados, anulación de ventas y devoluciones, venta por peso, integración con datáfonos o pasarelas, exportar a Excel/PDF, envío por correo/WhatsApp, impuestos desglosados, mesas/comandas.
+Facturación electrónica DIAN, offline, recetas (descontar materias primas al vender), descuentos, pagos combinados, anulación de ventas y devoluciones, venta por peso, integración con datáfonos o pasarelas, exportar reportes de ventas a Excel/PDF (solo el inventario se descarga, en CSV), PDF del inventario, envío por correo/WhatsApp, impuestos desglosados, mesas/comandas.
 
 ## Principio rector
 

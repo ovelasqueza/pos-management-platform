@@ -16,12 +16,21 @@ describe("ordenarSedes", () => {
 
 describe("esquemaCrearSede", () => {
   it("convierte opcionales vacíos en null", () => {
-    const r = esquemaCrearSede.parse({ nombre: " Norte ", tipo: "asadero", ciudad: " ", direccion: "", telefono: "  " });
-    expect(r).toEqual({ nombre: "Norte", tipo: "asadero", ciudad: null, direccion: null, telefono: null });
+    const r = esquemaCrearSede.parse({ nombre: " Norte ", nit: " 900.123.456-7 ", tipo: "asadero", ciudad: " ", direccion: "", telefono: "  " });
+    expect(r).toEqual({ nombre: "Norte", nit: "900123456-7", tipo: "asadero", ciudad: null, direccion: null, telefono: null });
   });
   it("exige nombre y tipo válido", () => {
-    expect(esquemaCrearSede.safeParse({ nombre: "", tipo: "asadero", ciudad: "", direccion: "", telefono: "" }).success).toBe(false);
-    expect(esquemaCrearSede.safeParse({ nombre: "X", tipo: "bar", ciudad: "", direccion: "", telefono: "" }).success).toBe(false);
+    expect(esquemaCrearSede.safeParse({ nombre: "", nit: "", tipo: "asadero", ciudad: "", direccion: "", telefono: "" }).success).toBe(false);
+    expect(esquemaCrearSede.safeParse({ nombre: "X", nit: "", tipo: "bar", ciudad: "", direccion: "", telefono: "" }).success).toBe(false);
+  });
+});
+
+describe("NIT de la sede", () => {
+  const base = { nombre: "X", tipo: "asadero", ciudad: "", direccion: "", telefono: "" };
+  it("es opcional y rechaza letras", () => {
+    expect(esquemaCrearSede.parse({ ...base, nit: "" }).nit).toBeNull();
+    expect(esquemaCrearSede.parse({ ...base, nit: "16789012" }).nit).toBe("16789012");
+    expect(esquemaCrearSede.safeParse({ ...base, nit: "90012A" }).success).toBe(false);
   });
 });
 

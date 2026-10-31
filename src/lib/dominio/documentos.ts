@@ -2,7 +2,8 @@ import type { MetodoPago } from "./cobro";
 
 /** Datos que devuelve la BD para imprimir (ver privado.ticket y privado.armar_reporte). */
 
-type DatosSede = { nombre: string; direccion: string | null; telefono: string | null };
+/** `nit` solo viene en el ticket (script 12); el reporte de turno no lo trae. */
+type DatosSede = { nombre: string; nit?: string | null; direccion: string | null; telefono: string | null };
 
 export type DatosTicket = {
   venta_id: string;

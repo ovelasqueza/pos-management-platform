@@ -13,6 +13,7 @@ import type { EstadoFormulario } from "@/lib/formularios";
 type SedeEditable = {
   id: string;
   nombre: string;
+  nit: string | null;
   tipo: TipoSede;
   ciudad: string | null;
   direccion: string | null;
@@ -35,6 +36,16 @@ function Formulario({ sede, onListo }: { sede?: SedeEditable; onListo: () => voi
     <form action={enviar} className="flex flex-col gap-4">
       {sede && <input type="hidden" name="id" value={sede.id} />}
       <Campo etiqueta="Nombre" name="nombre" defaultValue={sede?.nombre} error={c.nombre} required autoFocus />
+      <Campo
+        etiqueta="NIT (opcional)"
+        name="nit"
+        inputMode="numeric"
+        autoComplete="off"
+        placeholder="900123456-7"
+        defaultValue={sede?.nit ?? ""}
+        error={c.nit}
+        className="num"
+      />
 
       {sede ? (
         <p className="text-sm text-texto-3">

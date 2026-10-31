@@ -25,7 +25,10 @@ export default async function PaginaSedes() {
           <tbody>
             {sedes.map((s) => (
               <tr key={s.id} className="border-b border-suave last:border-0">
-                <td className="px-4 py-2 font-medium">{s.nombre}</td>
+                <td className="px-4 py-2 font-medium">
+                  {s.nombre}
+                  {s.nit && <span className="num block text-xs font-normal text-texto-3">NIT {s.nit}</span>}
+                </td>
                 <td className="px-4 py-2 text-texto-2">{nombreTipo(s.tipo)}</td>
                 <td className="hidden px-4 py-2 text-texto-2 md:table-cell">
                   {s.ciudad || s.direccion ? (

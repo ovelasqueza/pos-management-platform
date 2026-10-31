@@ -16,11 +16,13 @@ const Fila = ({ izq, der, fuerte }: { izq: ReactNode; der: ReactNode; fuerte?: b
 
 const Linea = () => <div className="my-1 border-t border-dashed border-black" />;
 
-function Encabezado({ sede, copia }: { sede: DatosTicket["sede"]; copia: boolean }) {
+function Encabezado({ sede, copia, regimen }: { sede: DatosTicket["sede"]; copia: boolean; regimen?: boolean }) {
   return (
     <div className="text-center">
       {copia && <p className="mb-1 border border-black font-bold">COPIA</p>}
       <p className="text-[14px] font-bold">{sede.nombre}</p>
+      {sede.nit && <p>NIT {sede.nit}</p>}
+      {regimen && <p>Régimen simplificado</p>}
       {sede.direccion && <p>{sede.direccion}</p>}
       {sede.telefono && <p>Tel. {sede.telefono}</p>}
     </div>
@@ -32,7 +34,7 @@ const papel = "w-[72mm] p-[2mm] font-mono text-[11px] leading-snug text-black";
 export function Ticket({ datos, copia }: { datos: DatosTicket; copia: boolean }) {
   return (
     <div className={papel}>
-      <Encabezado sede={datos.sede} copia={copia} />
+      <Encabezado sede={datos.sede} copia={copia} regimen />
       <Linea />
       <Fila izq={`Venta #${datos.numero}`} der={formatearFechaHora(datos.fecha)} />
       <p>Cajero: {datos.cajero}</p>
