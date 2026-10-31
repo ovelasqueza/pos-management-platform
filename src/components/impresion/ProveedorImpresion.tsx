@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, use, useCallback, useEffect, useState, type ReactNode } from "react";
+import { createContext, use, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ReporteTurno, Ticket } from "./Documentos";
 import type { Documento } from "@/lib/dominio/documentos";
@@ -20,11 +20,26 @@ export function ProveedorImpresion({ children }: { children: ReactNode }) {
     setTrabajo((t) => ({ doc, n: (t?.n ?? 0) + 1 }));
   }, []);
 
+  // Número del último trabajo ya enviado a la impresora: cada trabajo se imprime una sola vez.
+  // Llamar window.print() dos veces seguidas lo bloquean extensiones de seguridad
+  // (p. ej. Malwarebytes Browser Guard: "Browser Locker Behavior").
+  const impreso = useRef(0);
+
   useEffect(() => {
-    if (!trabajo) return;
-    // Espera a que el documento esté pintado antes de imprimir
-    const id = requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
-    return () => cancelAnimationFrame(id);
+    if (!trabajo || impreso.current === trabajo.n) return;
+    // Espera dos cuadros para que el documento esté pintado antes de imprimir
+    let interno = 0;
+    const externo = requestAnimationFrame(() => {
+      interno = requestAnimationFrame(() => {
+        if (impreso.current === trabajo.n) return;
+        impreso.current = trabajo.n;
+        window.print();
+      });
+    });
+    return () => {
+      cancelAnimationFrame(externo);
+      cancelAnimationFrame(interno);
+    };
   }, [trabajo]);
 
   return (

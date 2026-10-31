@@ -100,9 +100,31 @@ export function PanelGastos({ abierto, turnoId, onCerrar, onTurnoCerrado }: Prop
       <Modal abierto={abierto && !anulando} titulo="Gastos del turno" onCerrar={onCerrar} ancho="md">
         <div className="flex flex-col gap-4">
           <form onSubmit={registrar} className="flex flex-col gap-3">
-            <div className="grid grid-cols-[8rem_1fr] gap-2">
-              <Campo etiqueta="Monto" inputMode="numeric" value={monto} onChange={(e) => setMonto(e.target.value)} error={errores.monto} className="num" />
-              <Campo etiqueta="Descripción" value={descripcion} maxLength={120} onChange={(e) => setDescripcion(e.target.value)} error={errores.descripcion} />
+            <div className="grid grid-cols-[11rem_1fr] gap-2">
+              <Campo
+                etiqueta="Monto"
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="0"
+                icono={<span className="num text-base font-semibold text-texto-2">$</span>}
+                value={monto}
+                // Puntos de miles mientras se escribe: 25000 → 25.000
+                onChange={(e) => {
+                  const digitos = e.target.value.replace(/\D/g, "").replace(/^0+/, "").slice(0, 9);
+                  setMonto(digitos ? new Intl.NumberFormat("es-CO").format(Number(digitos)) : "");
+                }}
+                error={errores.monto}
+                className="num text-right text-lg font-semibold"
+                autoFocus
+              />
+              <Campo
+                etiqueta="Descripción"
+                placeholder="Ej: hielo, domicilio, bolsas"
+                value={descripcion}
+                maxLength={120}
+                onChange={(e) => setDescripcion(e.target.value)}
+                error={errores.descripcion}
+              />
             </div>
             <Boton type="submit" variante="primario" disabled={enviando} icono={<Plus size={20} aria-hidden />}>
               Registrar gasto
@@ -119,7 +141,7 @@ export function PanelGastos({ abierto, turnoId, onCerrar, onTurnoCerrado }: Prop
             <ul className="max-h-[40vh] divide-y divide-suave overflow-y-auto">
               {gastos.map((g) => (
                 <li key={g.id} className={`flex items-center gap-3 py-1 ${g.anulado_en ? "text-texto-3 line-through" : ""}`}>
-                  <span className="num w-20 text-sm text-texto-3">{formatearHora(g.creado_en)}</span>
+                  <span className="num w-24 shrink-0 text-sm whitespace-nowrap text-texto-3">{formatearHora(g.creado_en)}</span>
                   <span className="min-w-0 flex-1 truncate">{g.descripcion}</span>
                   <span className="num font-semibold">{formatearPesos(g.monto)}</span>
                   {g.anulado_en ? (

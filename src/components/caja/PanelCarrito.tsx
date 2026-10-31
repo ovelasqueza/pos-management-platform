@@ -90,6 +90,11 @@ export function PanelCarrito({ carrito, despachar, onCobrar, cobroDeshabilitado 
     setTexto("");
   };
 
+  const fijarCantidad = () => {
+    if (editando) despachar({ tipo: "fijar", productoId: editando, cantidad: Number(texto) });
+    setEditando(null);
+  };
+
   const botonCobrar = (
     <Boton
       variante="primario"
@@ -155,17 +160,9 @@ export function PanelCarrito({ carrito, despachar, onCobrar, cobroDeshabilitado 
       <Modal abierto={Boolean(lineaEditando)} titulo={lineaEditando?.nombre ?? "Cantidad"} onCerrar={() => setEditando(null)} ancho="sm">
         <div className="flex flex-col gap-3">
           <PantallaMonto etiqueta="Cantidad" texto={texto || String(lineaEditando?.cantidad ?? "")} />
-          <TecladoNumerico valor={texto} onCambiar={(v) => setTexto(v.slice(0, 3))} />
+          <TecladoNumerico valor={texto} onCambiar={(v) => setTexto(v.slice(0, 3))} onEnter={() => cantidadValida && fijarCantidad()} />
           {texto !== "" && !cantidadValida && <p className="text-sm text-peligro">Entre 1 y {CANTIDAD_MAX}</p>}
-          <Boton
-            variante="primario"
-            tamano="lg"
-            disabled={!cantidadValida}
-            onClick={() => {
-              if (editando) despachar({ tipo: "fijar", productoId: editando, cantidad: Number(texto) });
-              setEditando(null);
-            }}
-          >
+          <Boton variante="primario" tamano="lg" disabled={!cantidadValida} onClick={fijarCantidad}>
             Listo
           </Boton>
         </div>

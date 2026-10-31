@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { ArrowLeft, Banknote, CreditCard, Delete, QrCode, RotateCw, type LucideIcon } from "lucide-react";
+import { Banknote, CreditCard, Delete, QrCode, RotateCw, type LucideIcon } from "lucide-react";
 import { formatearPesos } from "@/lib/dominio/dinero";
 import { calcularEfectivo, type MetodoPago } from "@/lib/dominio/cobro";
 import { Boton } from "@/components/ui/Boton";
 import { Aviso } from "@/components/ui/Aviso";
+import { useTecladoFisico } from "./tecladoFisico";
 
 export type ResultadoCobro = { ok: true; cambio: number | null } | { ok: false; error: string; reintentable: boolean };
 
@@ -99,8 +100,21 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
     });
   };
 
+  // Teclado físico: dígitos y Retroceso/Supr para el recibido; Enter = Cobrar (pide confirmación)
+  const raiz = useRef<HTMLDivElement>(null);
+  useTecladoFisico(raiz, (t) => {
+    if (porConfirmar || enviando) return false;
+    if (t === "enter") {
+      if (metodo !== "efectivo") return confirmar(metodo, null);
+      if (!efectivo.completo) return false;
+      return confirmar("efectivo", recibido);
+    }
+    if (metodo !== "efectivo") return false;
+    teclear(t);
+  });
+
   return (
-    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-3">
+    <div ref={raiz} className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-3">
       {porConfirmar && (
         <Confirmacion
           total={total}
@@ -111,11 +125,8 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
         />
       )}
 
-      {/* Fila 1: Volver + métodos de pago */}
+      {/* Fila 1: métodos de pago (Volver está en la barra superior de cobro) */}
       <div className="flex shrink-0 gap-2">
-        <Boton variante="secundario" tamano="lg" onClick={onCancelar} disabled={enviando} aria-label="Volver a la venta" icono={<ArrowLeft size={22} aria-hidden />}>
-          <span className="hidden lg:inline">Volver</span>
-        </Boton>
         <div className="grid flex-1 grid-cols-3 gap-2" role="radiogroup" aria-label="Método de pago">
           {METODOS.map(({ valor, nombre, icono: Icono }) => (
             <button

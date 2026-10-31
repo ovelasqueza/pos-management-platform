@@ -30,6 +30,7 @@ Después de ejecutar cada uno, marca la casilla y anota la fecha en la tabla.
 | Fecha | Qué | Cómo | Resultado |
 |---|---|---|---|
 | 2026-10-28 | Productos de panadería del software anterior (`6ae24b2924746_products.csv`) | `npm run importar-productos -- <csv> --aplicar` | 22 categorías y 346 productos en el catálogo Panadería, habilitados en "PANADERIA REPOSTERIA TRIGO, PAN Y CAFE DE ANTONIO NARIÑO" al precio del archivo. Sin costo (el CSV traía $1 de relleno). Inventario del CSV ignorado. 3 duplicados omitidos (CHORIZO SOLO, AVENA CASERA, POSTOBON 1.5). Categorías en mayúsculas; "Cerveza" + "cervezas" → CERVEZAS; "NIDO DE FRUTAS ?CHOCOLATE" → "NIDO DE FRUTAS Y CHOCOLATE" |
+| 2026-10-30 | Productos de asadero del software anterior (`6ae130925dae4_products.csv`) | `npm run importar-productos -- <csv> --tipo=asadero --aplicar` | 6 categorías (ALMUERZOS Y BANDEJAS, BEBIDAS, POLLO APANADO, POLLO ASADO, PORCIONES, SERVICIO DOMICILIO) y 87 productos en el catálogo Asadero, habilitados en la sede "ASADERO" al precio del archivo. Sin costo (decisión del usuario). Nombres en mayúsculas; "¨Porciones" → PORCIONES; "GASEOSA 1.5/2.5 ml" → "LITROS"; ALMUERZO CON CHULETA DE POLLO y BANDEJA CON CHULETA DE CERDO → ALMUERZOS Y BANDEJAS; PORCION CHULETA CERDO y MADURO → PORCIONES. Nombres de cervezas, ensaladas y maduro sin cambios |
 
 El importador sin `--aplicar` solo analiza. Es idempotente: no duplica categorías ni productos con el mismo nombre.
 

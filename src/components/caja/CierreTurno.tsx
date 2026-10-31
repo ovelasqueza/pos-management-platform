@@ -43,7 +43,7 @@ export function CierreTurno({ abierto, onCerrar, onConfirmar }: Props) {
         <div className="flex flex-col gap-3">
           <p className="text-sm text-texto-2">Cuenta el efectivo de la caja y escríbelo.</p>
           <PantallaMonto etiqueta="Efectivo contado" texto={contado} />
-          <TecladoNumerico valor={contado} onCambiar={setContado} />
+          <TecladoNumerico valor={contado} onCambiar={setContado} onEnter={() => contado !== "" && setPaso("confirmar")} />
           <Boton variante="primario" tamano="lg" disabled={contado === ""} onClick={() => setPaso("confirmar")}>
             Continuar
           </Boton>

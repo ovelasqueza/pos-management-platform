@@ -90,7 +90,7 @@ export function AbrirTurno({ sede, cajero, ultimoReporte, ocupada }: Props) {
           <div className="flex w-full max-w-sm flex-col gap-4">
             <h1 className="text-center text-2xl font-semibold">Abrir turno</h1>
             <PantallaMonto etiqueta="Base de caja" texto={base} />
-            <TecladoNumerico valor={base} onCambiar={setBase} />
+            <TecladoNumerico valor={base} onCambiar={setBase} onEnter={() => !pendiente && abrir()} />
             {error && <Aviso>{error}</Aviso>}
             <Boton variante="primario" tamano="lg" disabled={pendiente} onClick={abrir} icono={<LockOpen size={22} aria-hidden />}>
               {pendiente ? "Abriendo…" : "Abrir turno"}

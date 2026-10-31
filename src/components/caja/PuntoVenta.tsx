@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CircleCheck, Lock, LogOut, Receipt, Wallet, WifiOff, X } from "lucide-react";
+import { ArrowLeft, CircleCheck, Lock, LogOut, Receipt, Wallet, WifiOff, X } from "lucide-react";
 import { crearClienteNavegador } from "@/lib/supabase/browser";
 import { cargarProductosVendibles } from "@/lib/caja/productos";
 import {
@@ -41,6 +41,15 @@ type Props = {
 type Ventana = "cobro" | "ventas" | "gastos" | "cierre" | "salir" | null;
 
 const REFRESCO_MS = 30_000;
+
+/** "Maria Gainza" → "MG" */
+const iniciales = (nombre: string) =>
+  nombre
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("");
 const claveCarrito = (turno: string) => `pos:carrito:${turno}`;
 const claveCobro = (turno: string) => `pos:cobro:${turno}`;
 
@@ -240,10 +249,46 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
   if (reporte) return <ResultadoCierre reporte={reporte} />;
 
   const cantidades = new Map(carrito.map((l) => [l.productoId, l.cantidad]));
+  const enCobro = ventana === "cobro" && carrito.length > 0;
   const botonBarra = "min-h-12 px-3";
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
+      {enCobro ? (
+        /* Barra de cobro: solo volver, sede, cajero y conexión (sin Ventas/Gastos/Cerrar/Salir) */
+        <header className="flex items-center gap-3 bg-primario-activo px-3 py-2 text-white">
+          <button
+            type="button"
+            onClick={() => setVentana(null)}
+            className="flex min-h-12 shrink-0 items-center gap-2 rounded-tarjeta bg-white/10 px-4 font-semibold hover:bg-white/20 active:bg-white/25"
+          >
+            <ArrowLeft size={20} aria-hidden />
+            Volver a la venta
+          </button>
+          <div className="mr-auto min-w-0 border-l border-white/20 pl-3">
+            <p className="truncate font-semibold">{sede}</p>
+            <p className="text-xs text-white/70">Cobro</p>
+          </div>
+          <div className="hidden shrink-0 items-center gap-2 rounded-tarjeta bg-white/10 py-1.5 pr-4 pl-1.5 md:flex">
+            <span className="flex size-9 items-center justify-center rounded-full bg-white/20 text-sm font-bold" aria-hidden>
+              {iniciales(cajero)}
+            </span>
+            <span>
+              <span className="block text-[10px] font-semibold tracking-wider text-white/70 uppercase">Cajero en turno</span>
+              <span className="block text-sm font-semibold">{cajero}</span>
+            </span>
+          </div>
+          <span
+            role="status"
+            className={`flex shrink-0 items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
+              enLinea ? "bg-white/15" : "bg-peligro"
+            }`}
+          >
+            <span className={`size-2 rounded-full ${enLinea ? "bg-emerald-300" : "bg-white"}`} aria-hidden />
+            {enLinea ? "En línea" : "Sin conexión"}
+          </span>
+        </header>
+      ) : (
       <header className="flex items-center gap-2 border-b border-borde bg-superficie px-3 py-2">
         <div className="mr-auto min-w-0">
           <p className="truncate font-semibold">{sede}</p>
@@ -266,6 +311,7 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
         </Boton>
         <Boton variante="fantasma" className={botonBarra} aria-label="Salir" icono={<LogOut size={20} aria-hidden />} onClick={() => setVentana("salir")} />
       </header>
+      )}
 
       {aviso && (
         <div className="px-3 pt-3">
@@ -310,7 +356,7 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
               </button>
             </div>
           )}
-          {ventana === "cobro" && carrito.length > 0 ? (
+          {enCobro ? (
             <PanelCobro total={totalCarrito(carrito)} onCancelar={() => setVentana(null)} onConfirmar={cobrar} />
           ) : (
             <CuadriculaProductos

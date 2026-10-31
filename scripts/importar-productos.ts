@@ -4,7 +4,7 @@
  *   npm run importar-productos -- <archivo.csv>              → solo analiza (no escribe nada)
  *   npm run importar-productos -- <archivo.csv> --aplicar    → crea categorías y productos
  *
- * Opciones: --tipo=panaderia|asadero (por defecto panaderia)
+ * Opciones: --tipo=panaderia|asadero (por defecto panaderia) · --listar (en el análisis, muestra cada producto)
  *
  * Columnas usadas: "Nombre Producto", "Precio Venta", "Categoria", "Unidad de Medida".
  * Se ignoran: Costo (en el CSV es un valor de relleno; el costo real va por sede),
@@ -75,15 +75,27 @@ const ALIAS_CATEGORIA: Record<string, string> = { CERVEZA: "CERVEZAS" };
 // Correcciones puntuales de nombres que vienen dañados en el archivo.
 const CORRECCION_NOMBRE: Record<string, string> = {
   "NIDO DE FRUTAS ?CHOCOLATE": "NIDO DE FRUTAS Y CHOCOLATE",
+  // Asadero (2026-10-30): la medida venía en "ml"
+  "GASEOSA 1.5 ML": "GASEOSA 1.5 LITROS",
+  "GASEOSA 2.5 ML": "GASEOSA 2.5 LITROS",
+};
+// Asadero (2026-10-30): productos sin categoría o en una categoría equivocada
+const CATEGORIA_POR_PRODUCTO: Record<string, string> = {
+  "ALMUERZO CON CHULETA DE POLLO": "ALMUERZOS Y BANDEJAS",
+  "BANDEJA CON CHULETA DE CERDO": "ALMUERZOS Y BANDEJAS",
+  "PORCION CHULETA CERDO": "PORCIONES",
+  MADURO: "PORCIONES",
 };
 
 function normalizarCategoria(v: string): string | null {
-  const c = limpiar(v).toLocaleUpperCase("es-CO");
+  // Quita símbolos sueltos al inicio (el CSV de asadero trae "¨Porciones")
+  const c = limpiar(v).replace(/^[^\p{L}\p{N}]+/u, "").toLocaleUpperCase("es-CO");
   return c ? (ALIAS_CATEGORIA[c] ?? c) : null;
 }
 
+// Regla: nombres en MAYÚSCULAS (el CSV de asadero trae "GASEOSA 250 ml")
 const normalizarNombre = (v: string) => {
-  const n = limpiar(v);
+  const n = limpiar(v).toLocaleUpperCase("es-CO");
   return CORRECCION_NOMBRE[n] ?? n;
 };
 
@@ -103,11 +115,12 @@ function leerFilas(): Fila[] {
     const precioTexto = limpiar(d[iPrecio]).replace(",", ".");
     const precioNum = Number(precioTexto);
     const precio = precioTexto !== "" && Number.isFinite(precioNum) && Number.isInteger(precioNum) ? precioNum : null;
+    const nombre = normalizarNombre(d[iNombre] ?? "");
     return {
       linea: n + 2,
-      nombre: normalizarNombre(d[iNombre] ?? ""),
+      nombre,
       precio,
-      categoria: normalizarCategoria(d[iCategoria] ?? ""),
+      categoria: CATEGORIA_POR_PRODUCTO[nombre] ?? normalizarCategoria(d[iCategoria] ?? ""),
       unidad: limpiar(d[iUnidad]).toLowerCase(),
     };
   });
@@ -170,6 +183,15 @@ async function main() {
   }
 
   if (!aplicar) {
+    if (args.includes("--listar")) {
+      console.log("\nProductos a importar:");
+      for (const c of [...categorias, null]) {
+        const grupo = validas.filter((f) => f.categoria === c);
+        if (!grupo.length) continue;
+        console.log(`\n  ${c ?? "(sin categoría)"}`);
+        for (const f of grupo) console.log(`    ${f.nombre} · $${f.precio}`);
+      }
+    }
     console.log("\nSolo análisis: no se escribió nada. Para importar agrega --aplicar.");
     return;
   }

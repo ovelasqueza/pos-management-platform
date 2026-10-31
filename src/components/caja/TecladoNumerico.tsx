@@ -1,14 +1,37 @@
 "use client";
 
+import { useRef } from "react";
 import { Delete } from "lucide-react";
 import { aplicarTecla } from "@/lib/dominio/cobro";
+import { useTecladoFisico } from "./tecladoFisico";
 
 const TECLAS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "borrar"] as const;
 
-/** Teclado numérico táctil (teclas de 56 px). También acepta el teclado físico vía el input del padre. */
-export function TecladoNumerico({ valor, onCambiar }: { valor: string; onCambiar: (v: string) => void }) {
+type Props = {
+  valor: string;
+  onCambiar: (v: string) => void;
+  /** Enter del teclado físico (p. ej. continuar o confirmar) */
+  onEnter?: () => void;
+};
+
+/**
+ * Teclado numérico táctil (teclas de 56 px).
+ * También funciona con el teclado físico: dígitos, Retroceso, Supr (limpiar) y Enter.
+ */
+export function TecladoNumerico({ valor, onCambiar, onEnter }: Props) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useTecladoFisico(ref, (t) => {
+    if (t === "enter") {
+      if (!onEnter) return false;
+      onEnter();
+      return;
+    }
+    onCambiar(aplicarTecla(valor, t));
+  });
+
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div ref={ref} className="grid grid-cols-3 gap-2">
       {TECLAS.map((t) => (
         <button
           key={t}

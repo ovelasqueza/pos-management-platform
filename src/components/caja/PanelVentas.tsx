@@ -85,7 +85,7 @@ export function PanelVentas({ abierto, turnoId, onCerrar }: { abierto: boolean; 
               {ventas.map((v) => (
                 <li key={v.id} className="flex items-center gap-3 py-1">
                   <span className="num w-14 font-semibold">#{v.numero}</span>
-                  <span className="num w-20 text-sm text-texto-3">{formatearHora(v.creado_en)}</span>
+                  <span className="num w-24 shrink-0 text-sm whitespace-nowrap text-texto-3">{formatearHora(v.creado_en)}</span>
                   <span className="flex-1 text-sm text-texto-2">{nombreMetodo(v.metodo)}</span>
                   <span className="num font-semibold">{formatearPesos(v.total)}</span>
                   <button
