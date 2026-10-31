@@ -58,6 +58,26 @@ body {
   scrollbar-color: var(--color-borde-activo) transparent;
 }
 
+/* Crossfade del admin al navegar (TransicionAdmin). Muy corto: apenas suaviza el cambio. */
+::view-transition-group(admin-contenido),
+::view-transition-old(admin-contenido),
+::view-transition-new(admin-contenido) {
+  animation-duration: 90ms;
+  animation-timing-function: linear;
+}
+/* Los clics durante la animación llegan a la página (no se pierden) */
+::view-transition {
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
 /* Impresión 80 mm: solo se imprime .zona-impresion */
 @media print {
   @page {

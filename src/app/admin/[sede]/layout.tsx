@@ -4,6 +4,7 @@ import { listarSedes, resolverSede } from "@/lib/admin/sedes";
 import { MenuAdmin } from "@/components/admin/MenuAdmin";
 import { SelectorSede } from "@/components/admin/SelectorSede";
 import { BotonSalir } from "@/components/admin/BotonSalir";
+import { TransicionAdmin } from "@/components/admin/TransicionAdmin";
 
 export default async function LayoutAdmin({ children, params }: LayoutProps<"/admin/[sede]">) {
   const [perfil, { sede: segmento }] = await Promise.all([requerirAdmin(), params]);
@@ -25,7 +26,9 @@ export default async function LayoutAdmin({ children, params }: LayoutProps<"/ad
             <BotonSalir compacto />
           </div>
         </header>
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6">
+          <TransicionAdmin>{children}</TransicionAdmin>
+        </main>
       </div>
     </div>
   );

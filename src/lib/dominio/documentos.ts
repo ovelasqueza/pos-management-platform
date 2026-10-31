@@ -14,6 +14,8 @@ export type DatosTicket = {
   total: number;
   recibido: number | null;
   cambio: number | null;
+  /** Ventas antes del script 09 no lo traen: se asume Consumidor Final */
+  cliente?: { tipo: string; documento: string; nombre: string };
   lineas: { nombre: string; cantidad: number; precio: number; subtotal: number }[];
 };
 

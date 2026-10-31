@@ -3,6 +3,7 @@ import { formatearPesos } from "@/lib/dominio/dinero";
 import { formatearFechaHora, formatearHora } from "@/lib/dominio/fechas";
 import { clasificarDiferencia, nombreDiferencia, nombreMetodo } from "@/lib/dominio/cobro";
 import type { DatosReporte, DatosTicket } from "@/lib/dominio/documentos";
+import { CONSUMIDOR_FINAL, esConsumidorFinal } from "@/lib/dominio/cliente";
 
 /* Documentos para impresora térmica de 80 mm (≈ 72 mm imprimibles). */
 
@@ -35,6 +36,11 @@ export function Ticket({ datos, copia }: { datos: DatosTicket; copia: boolean })
       <Linea />
       <Fila izq={`Venta #${datos.numero}`} der={formatearFechaHora(datos.fecha)} />
       <p>Cajero: {datos.cajero}</p>
+      <p>Cliente: {datos.cliente?.nombre ?? CONSUMIDOR_FINAL.nombre}</p>
+      <p>
+        {datos.cliente && !esConsumidorFinal(datos.cliente) ? `${datos.cliente.tipo} ` : "NIT/CC "}
+        {datos.cliente?.documento ?? CONSUMIDOR_FINAL.documento}
+      </p>
       <Linea />
       {datos.lineas.map((l) => (
         <div key={l.nombre} className="mb-0.5">

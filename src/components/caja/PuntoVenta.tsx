@@ -16,6 +16,7 @@ import {
 } from "@/lib/dominio/carrito";
 import type { MetodoPago } from "@/lib/dominio/cobro";
 import { formatearPesos } from "@/lib/dominio/dinero";
+import { esConsumidorFinal, type Cliente } from "@/lib/dominio/cliente";
 import { nuevoUUID } from "@/lib/uuid";
 import type { DatosReporte, DatosTicket } from "@/lib/dominio/documentos";
 import { esCodigo, esErrorDeRed, mensajeDeError } from "@/lib/dominio/errores";
@@ -171,7 +172,7 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
   }
 
   // ── Cobro ──
-  async function cobrar(metodo: MetodoPago, recibido: number | null): Promise<ResultadoCobro> {
+  async function cobrar(metodo: MetodoPago, recibido: number | null, cliente: Cliente | null): Promise<ResultadoCobro> {
     const firma = firmaCarrito(carrito);
     const pendiente = leerJSON<{ clave: string; firma: string }>(claveCobro(turnoId));
     // Mismo carrito → misma clave: si el cobro anterior sí llegó, la BD no lo duplica
@@ -183,6 +184,8 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
       p_metodo: metodo,
       p_lineas: carrito.map((l) => ({ producto_id: l.productoId, cantidad: l.cantidad, precio: l.precio })),
       p_recibido: recibido,
+      // Consumidor Final no se envía: la BD lo pone por defecto
+      ...(cliente && !esConsumidorFinal(cliente) ? { p_cliente: cliente } : {}),
     });
 
     if (error) {

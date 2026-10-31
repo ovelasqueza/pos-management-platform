@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Croissant, Flame, Search } from "lucide-react";
+import { ArrowDown, Croissant, Flame, Search } from "lucide-react";
 import { formatearPesos } from "@/lib/dominio/dinero";
 import { normalizarTexto } from "@/lib/dominio/producto";
 import type { TipoSede } from "@/lib/dominio/sede";
@@ -15,13 +15,37 @@ type Fila = {
   porSede: { sede: string; unidades: number }[];
 };
 
-type Orden = "unidades" | "valor" | "nombre";
+type Orden = "unidades" | "valor";
 
-const ORDENES: { valor: Orden; nombre: string }[] = [
-  { valor: "unidades", nombre: "Unidades" },
-  { valor: "valor", nombre: "Valor" },
-  { valor: "nombre", nombre: "Nombre" },
-];
+/** Título de columna que ordena de mayor a menor al tocarlo; la flecha indica la columna activa. */
+function TituloOrden({
+  columna,
+  orden,
+  onOrdenar,
+  children,
+}: {
+  columna: Orden;
+  orden: Orden;
+  onOrdenar: (o: Orden) => void;
+  children: string;
+}) {
+  const activa = orden === columna;
+  return (
+    <th className="px-2 py-1 text-right font-medium" aria-sort={activa ? "descending" : "none"}>
+      <button
+        type="button"
+        onClick={() => onOrdenar(columna)}
+        title={`Ordenar por ${children.toLowerCase()} (de mayor a menor)`}
+        className={`inline-flex min-h-11 items-center gap-1 rounded-control px-2 hover:bg-suave hover:text-texto ${
+          activa ? "font-semibold text-texto" : ""
+        }`}
+      >
+        {children}
+        <ArrowDown size={14} aria-hidden className={activa ? "text-primario" : "opacity-0"} />
+      </button>
+    </th>
+  );
+}
 
 export function ProductosVendidos({ filas, todas }: { filas: Fila[]; todas: boolean }) {
   const [busqueda, setBusqueda] = useState("");
@@ -31,11 +55,7 @@ export function ProductosVendidos({ filas, todas }: { filas: Fila[]; todas: bool
     const q = normalizarTexto(busqueda);
     const lista = q ? filas.filter((f) => normalizarTexto(f.nombre).includes(q)) : [...filas];
     return lista.sort((a, b) =>
-      orden === "nombre"
-        ? a.nombre.localeCompare(b.nombre, "es-CO", { sensitivity: "base" })
-        : orden === "valor"
-          ? b.valor - a.valor
-          : b.unidades - a.unidades,
+      orden === "valor" ? b.valor - a.valor || b.unidades - a.unidades : b.unidades - a.unidades || b.valor - a.valor,
     );
   }, [filas, busqueda, orden]);
 
@@ -53,21 +73,6 @@ export function ProductosVendidos({ filas, todas }: { filas: Fila[]; todas: bool
             className="min-h-12 w-full rounded-control border border-borde-activo bg-superficie pr-4 pl-10 focus:border-primario focus:outline-none"
           />
         </label>
-        <div className="flex gap-1 rounded-tarjeta bg-suave p-1" role="group" aria-label="Ordenar por">
-          {ORDENES.map((o) => (
-            <button
-              key={o.valor}
-              type="button"
-              aria-pressed={orden === o.valor}
-              onClick={() => setOrden(o.valor)}
-              className={`min-h-11 rounded-control px-3 text-sm font-medium ${
-                orden === o.valor ? "border border-borde bg-superficie text-texto" : "text-texto-3"
-              }`}
-            >
-              {o.nombre}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div className="overflow-x-auto rounded-tarjeta border border-borde bg-superficie">
@@ -76,8 +81,12 @@ export function ProductosVendidos({ filas, todas }: { filas: Fila[]; todas: bool
             <tr>
               <th className="px-4 py-3 font-medium">Producto</th>
               {todas && <th className="hidden px-4 py-3 font-medium lg:table-cell">Por sede</th>}
-              <th className="px-4 py-3 text-right font-medium">Unidades</th>
-              <th className="px-4 py-3 text-right font-medium">Valor</th>
+              <TituloOrden columna="unidades" orden={orden} onOrdenar={setOrden}>
+                Unidades
+              </TituloOrden>
+              <TituloOrden columna="valor" orden={orden} onOrdenar={setOrden}>
+                Valor
+              </TituloOrden>
             </tr>
           </thead>
           <tbody>

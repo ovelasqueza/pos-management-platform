@@ -1,12 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
-import { Banknote, CreditCard, Delete, QrCode, RotateCw, X, type LucideIcon } from "lucide-react";
+import { Banknote, CreditCard, Delete, Pencil, QrCode, RotateCw, UserRound, X, type LucideIcon } from "lucide-react";
 import { formatearPesos } from "@/lib/dominio/dinero";
 import { calcularEfectivo, type MetodoPago } from "@/lib/dominio/cobro";
+import {
+  CONSUMIDOR_FINAL,
+  TIPOS_DOCUMENTO,
+  esConsumidorFinal,
+  validarCliente,
+  type Cliente,
+} from "@/lib/dominio/cliente";
 import { Boton } from "@/components/ui/Boton";
 import { Aviso } from "@/components/ui/Aviso";
+import { Campo } from "@/components/ui/Campo";
+import { Modal } from "@/components/ui/Modal";
 import { useTecladoFisico } from "./tecladoFisico";
 
 export type ResultadoCobro = { ok: true; cambio: number | null } | { ok: false; error: string; reintentable: boolean };
@@ -14,7 +23,7 @@ export type ResultadoCobro = { ok: true; cambio: number | null } | { ok: false; 
 type Props = {
   total: number;
   onCancelar: () => void;
-  onConfirmar: (metodo: MetodoPago, recibido: number | null) => Promise<ResultadoCobro>;
+  onConfirmar: (metodo: MetodoPago, recibido: number | null, cliente: Cliente | null) => Promise<ResultadoCobro>;
 };
 
 /* Billetes y monedas de Colombia: imágenes en public/billetes (Banco de la República). */
@@ -48,6 +57,8 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<{ texto: string; reintentable: boolean; recibido: number | null } | null>(null);
   const [porConfirmar, setPorConfirmar] = useState<{ metodo: MetodoPago; monto: number | null } | null>(null);
+  const [cliente, setCliente] = useState<Cliente>(CONSUMIDOR_FINAL);
+  const [editandoCliente, setEditandoCliente] = useState(false);
 
   const efectivo = calcularEfectivo(total, recibido);
 
@@ -62,7 +73,7 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
     setPorConfirmar(null);
     setEnviando(true);
     setError(null);
-    const r = await onConfirmar(m, monto);
+    const r = await onConfirmar(m, monto, esConsumidorFinal(cliente) ? null : cliente);
     setEnviando(false);
     if (!r.ok) setError({ texto: r.error, reintentable: r.reintentable, recibido: monto });
   }
@@ -70,7 +81,7 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
   // Enter = confirmar el cobro pendiente; Escape = cancelar la confirmación o volver a la venta
   useEffect(() => {
     const alTeclear = (e: KeyboardEvent) => {
-      if (enviando) return;
+      if (enviando || editandoCliente) return;
       if (porConfirmar && e.key === "Enter") {
         e.preventDefault();
         void ejecutar(porConfirmar.metodo, porConfirmar.monto);
@@ -103,7 +114,7 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
   // Teclado físico: dígitos y Retroceso/Supr para el recibido; Enter = Cobrar (pide confirmación)
   const raiz = useRef<HTMLDivElement>(null);
   useTecladoFisico(raiz, (t) => {
-    if (porConfirmar || enviando) return false;
+    if (porConfirmar || enviando || editandoCliente) return false;
     if (t === "enter") {
       if (metodo !== "efectivo") return confirmar(metodo, null);
       if (!efectivo.completo) return false;
@@ -122,10 +133,21 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
           recibido={porConfirmar.monto}
           onSi={() => ejecutar(porConfirmar.metodo, porConfirmar.monto)}
           onNo={() => setPorConfirmar(null)}
+          cliente={cliente}
         />
       )}
 
-      {/* Fila 1: métodos de pago (Volver está en la barra superior de cobro) */}
+      <DatosCliente
+        abierto={editandoCliente}
+        actual={cliente}
+        onGuardar={(c) => {
+          setCliente(c);
+          setEditandoCliente(false);
+        }}
+        onCerrar={() => setEditandoCliente(false)}
+      />
+
+      {/* Fila 1: métodos de pago + cliente (Volver está en la barra superior de cobro) */}
       <div className="flex shrink-0 gap-2">
         <div className="grid flex-1 grid-cols-3 gap-2" role="radiogroup" aria-label="Método de pago">
           {METODOS.map(({ valor, nombre, icono: Icono }) => (
@@ -149,6 +171,27 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
             </button>
           ))}
         </div>
+
+        {/* Cliente: por defecto Consumidor Final (DIAN). Tocar para poner los datos. */}
+        <button
+          type="button"
+          onClick={() => setEditandoCliente(true)}
+          aria-label={`Cliente: ${cliente.nombre}, ${cliente.tipo} ${cliente.documento}. Cambiar`}
+          className={`flex min-h-14 w-64 shrink-0 items-center gap-3 rounded-tarjeta border-2 px-3 text-left ${
+            esConsumidorFinal(cliente)
+              ? "border-borde bg-superficie hover:border-borde-activo"
+              : "border-primario bg-exito-suave"
+          }`}
+        >
+          <UserRound size={24} className={esConsumidorFinal(cliente) ? "text-texto-3" : "text-primario"} aria-hidden />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-bold">{cliente.nombre}</span>
+            <span className="num block truncate text-xs text-texto-3">
+              {cliente.tipo} {cliente.documento}
+            </span>
+          </span>
+          <Pencil size={16} className="shrink-0 text-texto-3" aria-hidden />
+        </button>
       </div>
 
       {metodo === "efectivo" ? (
@@ -314,6 +357,80 @@ function Dato({
   );
 }
 
+/** Datos del cliente (opcional). "Consumidor final" vuelve al valor por defecto. */
+function DatosCliente({
+  abierto,
+  actual,
+  onGuardar,
+  onCerrar,
+}: {
+  abierto: boolean;
+  actual: Cliente;
+  onGuardar: (c: Cliente) => void;
+  onCerrar: () => void;
+}) {
+  return (
+    <Modal abierto={abierto} titulo="Cliente" onCerrar={onCerrar} ancho="sm">
+      {abierto && <FormCliente actual={actual} onGuardar={onGuardar} />}
+    </Modal>
+  );
+}
+
+function FormCliente({ actual, onGuardar }: { actual: Cliente; onGuardar: (c: Cliente) => void }) {
+  const inicial = esConsumidorFinal(actual) ? { tipo: "CC", documento: "", nombre: "" } : actual;
+  const [tipo, setTipo] = useState<string>(inicial.tipo);
+  const [documento, setDocumento] = useState(inicial.documento);
+  const [nombre, setNombre] = useState(inicial.nombre);
+  const [errores, setErrores] = useState<Partial<Record<keyof Cliente, string>>>({});
+
+  function guardar(e: FormEvent) {
+    e.preventDefault();
+    const r = validarCliente({ tipo, documento, nombre });
+    if (!r.ok) return setErrores(r.errores);
+    onGuardar(r.cliente);
+  }
+
+  return (
+    <form onSubmit={guardar} className="flex flex-col gap-3">
+      <Boton tamano="lg" icono={<UserRound size={20} aria-hidden />} onClick={() => onGuardar(CONSUMIDOR_FINAL)}>
+        Consumidor final (222222222222)
+      </Boton>
+      <p className="text-center text-xs text-texto-3">o escribe los datos del cliente</p>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="cliente-tipo" className="text-sm font-semibold text-texto-2">
+          Tipo de documento
+        </label>
+        <select
+          id="cliente-tipo"
+          value={tipo}
+          onChange={(e) => setTipo(e.target.value)}
+          className="min-h-12 rounded-control border border-borde-activo bg-superficie px-4 focus:border-primario focus:outline-none"
+        >
+          {TIPOS_DOCUMENTO.map((t) => (
+            <option key={t.valor} value={t.valor}>
+              {t.nombre} ({t.valor})
+            </option>
+          ))}
+        </select>
+      </div>
+      <Campo
+        etiqueta="Número"
+        inputMode="numeric"
+        autoComplete="off"
+        value={documento}
+        onChange={(e) => setDocumento(e.target.value.replace(/[^0-9-]/g, "").slice(0, 17))}
+        error={errores.documento}
+        className="num"
+        autoFocus
+      />
+      <Campo etiqueta="Nombre o razón social" autoComplete="off" value={nombre} maxLength={100} onChange={(e) => setNombre(e.target.value)} error={errores.nombre} />
+      <Boton type="submit" variante="primario" tamano="lg">
+        Usar este cliente
+      </Boton>
+    </form>
+  );
+}
+
 /** Confirmación corta sobre el panel de cobro: lo esencial y dos botones. Enter = sí, Esc = no. */
 function Confirmacion({
   total,
@@ -321,12 +438,14 @@ function Confirmacion({
   recibido,
   onSi,
   onNo,
+  cliente,
 }: {
   total: number;
   metodo: MetodoPago;
   recibido: number | null;
   onSi: () => void;
   onNo: () => void;
+  cliente: Cliente;
 }) {
   const nombre = METODOS.find((m) => m.valor === metodo)?.nombre ?? metodo;
   const cambio = recibido !== null ? recibido - total : null;
@@ -337,6 +456,9 @@ function Confirmacion({
         <div>
           <p className="text-sm font-semibold text-texto-3">¿Cobrar con {nombre === "QR" ? "QR" : nombre.toLowerCase()}?</p>
           <p className="num text-4xl font-bold tracking-tight">{formatearPesos(total)}</p>
+          <p className="mt-1 truncate text-sm text-texto-2">
+            {cliente.nombre} · {cliente.tipo} {cliente.documento}
+          </p>
         </div>
         {cambio !== null && (
           <div className="rounded-tarjeta bg-exito-suave py-2 text-primario-activo">
