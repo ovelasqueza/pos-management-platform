@@ -14,6 +14,7 @@ type SedeEditable = {
   id: string;
   nombre: string;
   tipo: TipoSede;
+  ciudad: string | null;
   direccion: string | null;
   telefono: string | null;
 };
@@ -57,7 +58,10 @@ function Formulario({ sede, onListo }: { sede?: SedeEditable; onListo: () => voi
         </fieldset>
       )}
 
-      <Campo etiqueta="Dirección (opcional)" name="direccion" defaultValue={sede?.direccion ?? ""} error={c.direccion} />
+      <div className="grid gap-4 sm:grid-cols-[2fr_3fr]">
+        <Campo etiqueta="Ciudad (opcional)" name="ciudad" defaultValue={sede?.ciudad ?? ""} error={c.ciudad} />
+        <Campo etiqueta="Dirección / barrio (opcional)" name="direccion" defaultValue={sede?.direccion ?? ""} error={c.direccion} />
+      </div>
       <Campo etiqueta="Teléfono (opcional)" name="telefono" type="tel" defaultValue={sede?.telefono ?? ""} error={c.telefono} />
       {estado.error && <Aviso>{estado.error}</Aviso>}
 

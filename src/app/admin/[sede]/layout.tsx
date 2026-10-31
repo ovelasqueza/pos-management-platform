@@ -18,7 +18,7 @@ export default async function LayoutAdmin({ children, params }: LayoutProps<"/ad
           <span className="hidden sm:block" aria-hidden />
           <SelectorSede
             actual={segmento}
-            sedes={sedes.map(({ id, nombre, tipo, direccion, activa }) => ({ id, nombre, tipo, direccion, activa }))}
+            sedes={sedes.map(({ id, nombre, tipo, ciudad, direccion, activa }) => ({ id, nombre, tipo, ciudad, direccion, activa }))}
           />
           <div className="flex min-w-0 items-center justify-end gap-3">
             <p className="hidden truncate text-sm text-texto-3 lg:block">{perfil.nombreCompleto}</p>

@@ -4,9 +4,9 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Check, ChevronDown, Croissant, Flame, MapPin, Network, Search } from "lucide-react";
 import { normalizarTexto } from "@/lib/dominio/producto";
-import type { TipoSede } from "@/lib/dominio/sede";
+import { ubicacionSede, type TipoSede } from "@/lib/dominio/sede";
 
-type SedeOpcion = { id: string; nombre: string; tipo: TipoSede; direccion: string | null; activa: boolean };
+type SedeOpcion = { id: string; nombre: string; tipo: TipoSede; ciudad: string | null; direccion: string | null; activa: boolean };
 
 type Props = { actual: string; sedes: SedeOpcion[] };
 
@@ -33,7 +33,7 @@ export function SelectorSede({ actual, sedes }: Props) {
   // "Todas" siempre primero; luego las que coinciden con la búsqueda (activas antes que inactivas)
   const opciones = useMemo(() => {
     const q = normalizarTexto(busqueda);
-    const filtradas = sedes.filter((s) => !q || normalizarTexto(`${s.nombre} ${s.direccion ?? ""}`).includes(q));
+    const filtradas = sedes.filter((s) => !q || normalizarTexto(`${s.nombre} ${s.ciudad ?? ""} ${s.direccion ?? ""}`).includes(q));
     const todas = !q || normalizarTexto("todas las sedes").includes(q);
     return [...(todas ? [null] : []), ...filtradas];
   }, [busqueda, sedes]);
@@ -119,7 +119,7 @@ export function SelectorSede({ actual, sedes }: Props) {
                 setMarcada(0);
               }}
               onKeyDown={teclear}
-              placeholder="Buscar sede o barrio…"
+              placeholder="Buscar sede, ciudad o barrio…"
               aria-controls={idLista}
               aria-activedescendant={`${idLista}-${marcada}`}
               className="min-h-12 w-full bg-transparent pr-4 pl-10 text-sm placeholder:text-texto-3 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
@@ -156,10 +156,10 @@ export function SelectorSede({ actual, sedes }: Props) {
                       {s?.nombre ?? "Todas las sedes"}
                       {s && !s.activa && <span className="ml-1 text-xs font-normal">(inactiva)</span>}
                     </span>
-                    {s?.direccion && (
+                    {s && ubicacionSede(s) && (
                       <span className="flex items-center gap-1 text-xs text-texto-3">
                         <MapPin size={12} className="shrink-0" aria-hidden />
-                        <span className="truncate">{s.direccion}</span>
+                        <span className="truncate">{ubicacionSede(s)}</span>
                       </span>
                     )}
                     {!s && <span className="block text-xs text-texto-3">Vista consolidada</span>}

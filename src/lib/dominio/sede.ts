@@ -18,9 +18,15 @@ const opcional = (max: number) =>
 
 const camposEditables = {
   nombre: z.string().trim().min(1, "Escribe el nombre").max(80, "Máximo 80 caracteres"),
+  ciudad: opcional(60),
   direccion: opcional(150),
   telefono: opcional(30),
 };
+
+/** "Palmira · Barrio La Rivera" (solo lo que exista); null si no hay ninguno. */
+export function ubicacionSede(s: { ciudad?: string | null; direccion: string | null }): string | null {
+  return [s.ciudad, s.direccion].filter(Boolean).join(" · ") || null;
+}
 
 export const esquemaCrearSede = z.object({
   ...camposEditables,

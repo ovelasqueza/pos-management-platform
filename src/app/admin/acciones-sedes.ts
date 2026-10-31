@@ -11,6 +11,9 @@ const texto = (f: FormData, k: string) => String(f.get(k) ?? "");
 
 function errorNombre(error: { code?: string; message?: string }): EstadoFormulario {
   if (error.code === "23505") return { campos: { nombre: "Ya existe una sede con ese nombre" } };
+  if (error.code === "PGRST204" || error.code === "42703") {
+    return { error: "Falta ejecutar la migración de ciudad (ver docs/bd/README.md)" };
+  }
   return { error: mensajeDeError(error) };
 }
 
@@ -19,6 +22,7 @@ export async function crearSede(_: EstadoFormulario, f: FormData): Promise<Estad
   const datos = esquemaCrearSede.safeParse({
     nombre: texto(f, "nombre"),
     tipo: texto(f, "tipo"),
+    ciudad: texto(f, "ciudad"),
     direccion: texto(f, "direccion"),
     telefono: texto(f, "telefono"),
   });
@@ -37,6 +41,7 @@ export async function editarSede(_: EstadoFormulario, f: FormData): Promise<Esta
   const datos = esquemaEditarSede.safeParse({
     id: texto(f, "id"),
     nombre: texto(f, "nombre"),
+    ciudad: texto(f, "ciudad"),
     direccion: texto(f, "direccion"),
     telefono: texto(f, "telefono"),
   });

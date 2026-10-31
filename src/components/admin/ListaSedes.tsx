@@ -4,12 +4,13 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Croissant, Flame, MapPin, Search } from "lucide-react";
 import { normalizarTexto } from "@/lib/dominio/producto";
-import type { TipoSede } from "@/lib/dominio/sede";
+import { ubicacionSede, type TipoSede } from "@/lib/dominio/sede";
 
 export type SedeInicio = {
   id: string;
   nombre: string;
   tipo: TipoSede;
+  ciudad: string | null;
   direccion: string | null;
   telefono: string | null;
   activa: boolean;
@@ -28,7 +29,7 @@ export function ListaSedes({ sedes }: { sedes: SedeInicio[] }) {
   const visibles = useMemo(() => {
     const q = normalizarTexto(busqueda);
     if (!q) return sedes;
-    return sedes.filter((s) => normalizarTexto(`${s.nombre} ${s.direccion ?? ""} ${s.telefono ?? ""}`).includes(q));
+    return sedes.filter((s) => normalizarTexto(`${s.nombre} ${s.ciudad ?? ""} ${s.direccion ?? ""} ${s.telefono ?? ""}`).includes(q));
   }, [busqueda, sedes]);
 
   return (
@@ -40,7 +41,7 @@ export function ListaSedes({ sedes }: { sedes: SedeInicio[] }) {
           type="search"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
-          placeholder="Buscar por nombre, barrio o dirección"
+          placeholder="Buscar por nombre, ciudad o barrio"
           className="min-h-12 w-full rounded-control border border-borde-activo bg-superficie pr-4 pl-10 focus:border-primario focus:outline-none"
         />
       </label>
@@ -81,10 +82,10 @@ function TarjetaSede({ sede }: { sede: SedeInicio }) {
       <Icono size={28} className={`mt-0.5 shrink-0 ${sede.tipo === "panaderia" ? "text-advertencia" : "text-peligro"}`} aria-hidden />
       <div className="min-w-0">
         <p className="font-semibold break-words">{sede.nombre}</p>
-        {sede.direccion && (
+        {ubicacionSede(sede) && (
           <p className="mt-1 flex items-start gap-1 text-sm text-texto-3">
             <MapPin size={14} className="mt-0.5 shrink-0" aria-hidden />
-            <span className="break-words">{sede.direccion}</span>
+            <span className="break-words">{ubicacionSede(sede)}</span>
           </p>
         )}
       </div>

@@ -43,7 +43,7 @@ export default async function SelectorInicial() {
         </div>
       ) : (
         <ListaSedes
-          sedes={sedes.map(({ id, nombre, tipo, direccion, telefono, activa }) => ({ id, nombre, tipo, direccion, telefono, activa }))}
+          sedes={sedes.map(({ id, nombre, tipo, ciudad, direccion, telefono, activa }) => ({ id, nombre, tipo, ciudad, direccion, telefono, activa }))}
         />
       )}
     </main>
