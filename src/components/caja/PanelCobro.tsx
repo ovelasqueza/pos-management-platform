@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Banknote, CreditCard, Delete, QrCode, RotateCw, type LucideIcon } from "lucide-react";
+import { Banknote, CreditCard, Delete, QrCode, RotateCw, X, type LucideIcon } from "lucide-react";
 import { formatearPesos } from "@/lib/dominio/dinero";
 import { calcularEfectivo, type MetodoPago } from "@/lib/dominio/cobro";
 import { Boton } from "@/components/ui/Boton";
@@ -153,30 +153,40 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
 
       {metodo === "efectivo" ? (
         <div className="flex min-h-0 flex-1 flex-col gap-3">
-          {/* Fila 2: Total · Recibido · Cambio/Falta · Exacto — mismas columnas que billetes y teclado */}
+          {/* Fila 2: Total · Falta/Cambio (ancho) · Recibido encima del teclado */}
           <div className={`mb-2 grid shrink-0 gap-x-2 ${COLUMNAS}`}>
             <Dato titulo="TOTAL" valor={total} />
-            <Dato titulo="RECIBIDO" valor={recibido} />
-            {efectivo.completo ? (
-              <Dato titulo="CAMBIO" valor={efectivo.cambio} estilo="border-2 border-primario bg-exito-suave text-primario-activo" vivo />
-            ) : (
-              <Dato titulo="FALTA" valor={efectivo.falta} estilo="border-advertencia/40 bg-advertencia-suave text-advertencia" vivo />
-            )}
+            <div className="col-span-2">
+              {efectivo.completo ? (
+                <Dato titulo="CAMBIO A ENTREGAR" valor={efectivo.cambio} estilo="border-2 border-primario bg-exito-suave text-primario-activo" grande vivo />
+              ) : (
+                <Dato titulo="FALTA" valor={efectivo.falta} estilo="border-advertencia/40 bg-advertencia-suave text-advertencia" grande vivo />
+              )}
+            </div>
             <span aria-hidden />
-            <button
-              type="button"
-              disabled={enviando}
-              onClick={() => confirmar("efectivo", total)}
-              className="flex flex-col items-center justify-center rounded-tarjeta border-2 border-primario bg-exito-suave px-3 py-2 font-bold text-primario-activo active:bg-primario active:text-white"
-            >
-              <span className="text-xs">EXACTO</span>
-              <span className="num text-2xl">{formatearPesos(total)}</span>
-            </button>
+            {/* Recibido: se llena al digitar o tocar billetes */}
+            <div className="relative flex flex-col justify-center rounded-tarjeta border-2 border-primario bg-superficie px-3 py-2" aria-live="polite">
+              <p className="text-xs font-semibold text-texto-3">RECIBIDO</p>
+              <p className={`num truncate pr-9 text-right text-3xl font-bold tracking-tight ${recibido ? "text-texto" : "text-texto-3"}`}>
+                {formatearPesos(recibido)}
+                <span className="ml-0.5 inline-block w-0.5 animate-pulse bg-primario align-middle" style={{ height: "0.9em" }} aria-hidden />
+              </p>
+              <button
+                type="button"
+                onClick={() => teclear("limpiar")}
+                disabled={recibido === 0}
+                aria-label="Borrar todo lo recibido"
+                title="Borrar todo"
+                className="absolute top-1.5 right-1.5 flex size-9 items-center justify-center rounded-full text-texto-3 hover:bg-peligro-suave hover:text-peligro disabled:opacity-0"
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
 
-          {/* Fila 3: billetes | separador | teclado — y abajo monedas | Limpiar. Mismas columnas que el resumen. */}
+          {/* Fila 3: billetes | teclado — y abajo monedas | Exacto */}
           <div className={`grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] gap-x-2 gap-y-2 ${COLUMNAS}`}>
-            {/* Billetes: 3 columnas alineadas con Total / Recibido / Falta */}
+            {/* Billetes: 3 columnas alineadas con el resumen */}
             <div className="col-span-3 grid min-h-0 grid-cols-3 grid-rows-2 gap-2">
               {BILLETES.map((valor) => (
                 <button
@@ -187,7 +197,7 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
                   className={`flex min-h-0 flex-col items-center gap-1 p-2 ${tarjeta}`}
                 >
                   <span className="relative min-h-0 w-full flex-1">
-                    <Image src={`/billetes/${valor}.webp`} alt="" fill sizes="20vw" className="object-contain" />
+                    <Image src={`/billetes/${valor}_new.webp`} alt="" fill sizes="20vw" className="object-contain" />
                   </span>
                   <span className="num shrink-0 text-lg font-bold">${miles(valor)}</span>
                 </button>
@@ -197,7 +207,7 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
             {/* Separación (solo espacio, sin línea) */}
             <div className="row-span-2" aria-hidden />
 
-            {/* Teclado: columna alineada con Exacto */}
+            {/* Teclado */}
             <div className="grid min-h-0 grid-cols-3 grid-rows-4 gap-2" role="group" aria-label="Teclado numérico">
               {TECLAS.map((t) => (
                 <button
@@ -231,13 +241,15 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
               ))}
             </div>
 
+            {/* Exacto: cobra el total justo, debajo del teclado */}
             <button
               type="button"
-              onClick={() => teclear("limpiar")}
-              disabled={recibido === 0}
-              className="col-start-5 flex items-center justify-center rounded-tarjeta border border-peligro-borde bg-superficie text-xl font-bold text-peligro active:bg-peligro-suave disabled:opacity-40"
+              disabled={enviando}
+              onClick={() => confirmar("efectivo", total)}
+              className="col-start-5 flex flex-col items-center justify-center rounded-tarjeta border-2 border-primario bg-exito-suave font-bold text-primario-activo active:scale-[0.97] active:bg-primario active:text-white"
             >
-              Limpiar
+              <span className="text-xs tracking-wider">PAGA EXACTO</span>
+              <span className="num text-2xl">{formatearPesos(total)}</span>
             </button>
           </div>
 
@@ -281,11 +293,23 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
   );
 }
 
-function Dato({ titulo, valor, estilo = "border-borde bg-superficie", vivo }: { titulo: string; valor: number; estilo?: string; vivo?: boolean }) {
+function Dato({
+  titulo,
+  valor,
+  estilo = "border-borde bg-superficie",
+  vivo,
+  grande,
+}: {
+  titulo: string;
+  valor: number;
+  estilo?: string;
+  vivo?: boolean;
+  grande?: boolean;
+}) {
   return (
-    <div className={`rounded-tarjeta border px-3 py-2 ${estilo}`} aria-live={vivo ? "polite" : undefined}>
+    <div className={`flex h-full flex-col justify-center rounded-tarjeta border px-3 py-2 ${estilo}`} aria-live={vivo ? "polite" : undefined}>
       <p className="text-xs font-semibold opacity-80">{titulo}</p>
-      <p className="num truncate text-2xl font-bold">{formatearPesos(valor)}</p>
+      <p className={`num truncate font-bold ${grande ? "text-3xl tracking-tight" : "text-2xl"}`}>{formatearPesos(valor)}</p>
     </div>
   );
 }

@@ -46,7 +46,7 @@ function Vende({ fila, guardar }: { fila: FilaProductoSede; guardar: (v: boolean
 
   return (
     <div className="flex flex-col items-center">
-      <Interruptor activo={activo} etiqueta={`${fila.nombre}: se vende en esta sede`} deshabilitado={guardando} onCambiar={enviar} />
+      <Interruptor activo={activo} etiqueta={`${fila.nombre}: activo en esta sede`} deshabilitado={guardando} onCambiar={enviar} />
       {fallo && (
         <button
           type="button"
@@ -141,7 +141,9 @@ export function TablaProductosSede({ sedeId, tipo, filas, categorias }: Props) {
           <thead className="border-b border-borde text-sm text-texto-3">
             <tr>
               <th className="px-4 py-3 font-medium">Producto</th>
-              <th className="w-16 px-2 py-3 text-center font-medium">Vende</th>
+              <th className="w-20 px-2 py-3 text-center font-medium" title="Activar o desactivar el producto en esta sede">
+                Activo
+              </th>
               <th className="px-4 py-3 text-right font-medium">Precio venta</th>
               <th className="px-4 py-3 text-right font-medium">Costo</th>
               <th className="w-12" />

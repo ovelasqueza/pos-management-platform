@@ -7,7 +7,11 @@ type Props = {
   deshabilitado?: boolean;
 };
 
-/** Interruptor accesible (role="switch"). Área táctil de 48 px. */
+/**
+ * Interruptor accesible (role="switch"). Área táctil de 48 px.
+ * La perilla blanca se desliza a la derecha cuando está activo.
+ * Mientras se guarda no se atenúa (evita el parpadeo): solo ignora toques.
+ */
 export function Interruptor({ activo, onCambiar, etiqueta, deshabilitado }: Props) {
   return (
     <button
@@ -15,19 +19,22 @@ export function Interruptor({ activo, onCambiar, etiqueta, deshabilitado }: Prop
       role="switch"
       aria-checked={activo}
       aria-label={etiqueta}
-      disabled={deshabilitado}
-      onClick={() => onCambiar(!activo)}
-      className="flex size-12 items-center justify-center disabled:opacity-50"
+      aria-busy={deshabilitado || undefined}
+      onClick={() => {
+        if (!deshabilitado) onCambiar(!activo);
+      }}
+      className={`flex size-12 items-center justify-center rounded-control [-webkit-tap-highlight-color:transparent] ${
+        deshabilitado ? "cursor-wait" : "cursor-pointer"
+      }`}
     >
       <span
-        className={`relative h-6 w-11 rounded-full transition-colors ${
-          activo ? "bg-primario" : "bg-borde-activo"
-        }`}
+        aria-hidden
+        className="relative block h-7 w-12 rounded-full transition-colors duration-200 ease-out"
+        style={{ backgroundColor: activo ? "var(--color-primario)" : "var(--color-borde-activo)" }}
       >
         <span
-          className={`absolute top-0.5 size-5 rounded-full bg-white transition-transform ${
-            activo ? "translate-x-5.5" : "translate-x-0.5"
-          }`}
+          className="absolute top-0.5 left-0.5 block size-6 rounded-full bg-white shadow-sm transition-transform duration-200 ease-out"
+          style={{ transform: activo ? "translateX(20px)" : "translateX(0)" }}
         />
       </span>
     </button>

@@ -16,7 +16,10 @@ export default async function LayoutAdmin({ children, params }: LayoutProps<"/ad
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-borde bg-superficie px-4 py-2 sm:grid-cols-[1fr_minmax(0,3fr)_1fr] md:px-6">
           <span className="hidden sm:block" aria-hidden />
-          <SelectorSede actual={segmento} sedes={sedes.map(({ id, nombre, activa }) => ({ id, nombre, activa }))} />
+          <SelectorSede
+            actual={segmento}
+            sedes={sedes.map(({ id, nombre, tipo, direccion, activa }) => ({ id, nombre, tipo, direccion, activa }))}
+          />
           <div className="flex min-w-0 items-center justify-end gap-3">
             <p className="hidden truncate text-sm text-texto-3 lg:block">{perfil.nombreCompleto}</p>
             <BotonSalir compacto />
