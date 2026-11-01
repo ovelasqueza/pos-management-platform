@@ -4,21 +4,41 @@ import { formatearFechaHora, formatearHora } from "@/lib/dominio/fechas";
 import { clasificarDiferencia, nombreDiferencia, nombreMetodo } from "@/lib/dominio/cobro";
 import type { DatosReporte, DatosTicket } from "@/lib/dominio/documentos";
 import { CONSUMIDOR_FINAL, esConsumidorFinal } from "@/lib/dominio/cliente";
+import { describirOrigen } from "@/lib/dominio/cajaMayor";
 
 /* Documentos para impresora térmica de 80 mm (≈ 72 mm imprimibles). */
 
 const Fila = ({ izq, der, fuerte }: { izq: ReactNode; der: ReactNode; fuerte?: boolean }) => (
-  <div className={`flex justify-between gap-2 ${fuerte ? "font-bold" : ""}`}>
+  <div className={`flex justify-between gap-2 py-px ${fuerte ? "font-bold" : ""}`}>
     <span className="min-w-0">{izq}</span>
     <span className="shrink-0 text-right">{der}</span>
   </div>
 );
 
-const Linea = () => <div className="my-1 border-t border-dashed border-black" />;
+/** Separador entre bloques: línea punteada con aire arriba y abajo. */
+const Linea = () => <div className="my-2.5 border-t border-dashed border-black" />;
 
+/** Bloque con título propio (mayúsculas, subrayado) y sus filas. */
+function Seccion({ titulo, children }: { titulo?: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-0.5">
+      {titulo && <p className="mb-1 font-bold tracking-wide uppercase underline underline-offset-2">{titulo}</p>}
+      {children}
+    </section>
+  );
+}
+
+/** Fila destacada (totales): más grande y con un borde arriba. */
+const Destacado = ({ izq, der }: { izq: ReactNode; der: ReactNode }) => (
+  <div className="mt-1 border-t border-black pt-1 text-[14px]">
+    <Fila izq={izq} der={der} fuerte />
+  </div>
+);
+
+// Sin cambios: así quedó aprobado el título
 function Encabezado({ sede, copia, regimen }: { sede: DatosTicket["sede"]; copia: boolean; regimen?: boolean }) {
   return (
-    <div className="text-center">
+    <div className="text-center text-[11px] leading-snug">
       {copia && <p className="mb-1 border border-black font-bold">COPIA</p>}
       <p className="text-[14px] font-bold">{sede.nombre}</p>
       {sede.nit && <p>NIT {sede.nit}</p>}
@@ -29,86 +49,141 @@ function Encabezado({ sede, copia, regimen }: { sede: DatosTicket["sede"]; copia
   );
 }
 
-const papel = "w-[72mm] p-[2mm] font-mono text-[11px] leading-snug text-black";
+const papel = "w-[72mm] p-[2mm] font-mono text-[12px] leading-normal text-black";
 
 export function Ticket({ datos, copia }: { datos: DatosTicket; copia: boolean }) {
   return (
     <div className={papel}>
       <Encabezado sede={datos.sede} copia={copia} regimen />
       <Linea />
-      <Fila izq={`Venta #${datos.numero}`} der={formatearFechaHora(datos.fecha)} />
-      <p>Cajero: {datos.cajero}</p>
-      <p>Cliente: {datos.cliente?.nombre ?? CONSUMIDOR_FINAL.nombre}</p>
-      <p>
-        {datos.cliente && !esConsumidorFinal(datos.cliente) ? `${datos.cliente.tipo} ` : "NIT/CC "}
-        {datos.cliente?.documento ?? CONSUMIDOR_FINAL.documento}
-      </p>
+      <Seccion>
+        <Fila izq={<strong>Venta #{datos.numero}</strong>} der={formatearFechaHora(datos.fecha)} />
+        <Fila izq="Cajero" der={datos.cajero} />
+        <Fila izq="Cliente" der={datos.cliente?.nombre ?? CONSUMIDOR_FINAL.nombre} />
+        <Fila
+          izq={datos.cliente && !esConsumidorFinal(datos.cliente) ? datos.cliente.tipo : "NIT/CC"}
+          der={datos.cliente?.documento ?? CONSUMIDOR_FINAL.documento}
+        />
+      </Seccion>
       <Linea />
-      {datos.lineas.map((l) => (
-        <div key={l.nombre} className="mb-0.5">
-          <p>{l.nombre}</p>
-          <Fila izq={`${l.cantidad} x ${formatearPesos(l.precio)}`} der={formatearPesos(l.subtotal)} />
+      <Seccion titulo="Productos">
+        <div className="flex flex-col gap-2">
+          {datos.lineas.map((l) => (
+            <div key={l.nombre}>
+              <p className="font-bold">{l.nombre}</p>
+              <Fila izq={`  ${l.cantidad} x ${formatearPesos(l.precio)}`} der={formatearPesos(l.subtotal)} />
+            </div>
+          ))}
         </div>
-      ))}
+      </Seccion>
       <Linea />
-      <div className="text-[14px]">
+      <div className="text-[16px]">
         <Fila izq="TOTAL" der={formatearPesos(datos.total)} fuerte />
       </div>
-      <Fila izq="Pago" der={nombreMetodo(datos.metodo)} />
-      {datos.recibido !== null && (
-        <>
-          <Fila izq="Recibido" der={formatearPesos(datos.recibido)} />
-          <Fila izq="Cambio" der={formatearPesos(datos.cambio ?? 0)} />
-        </>
-      )}
+      <div className="mt-2">
+        <Seccion>
+          <Fila izq="Pago" der={nombreMetodo(datos.metodo)} />
+          {datos.recibido !== null && (
+            <>
+              <Fila izq="Recibido" der={formatearPesos(datos.recibido)} />
+              <Fila izq="Cambio" der={formatearPesos(datos.cambio ?? 0)} fuerte />
+            </>
+          )}
+        </Seccion>
+      </div>
       <Linea />
-      <p className="text-center">¡Gracias por su compra!</p>
+      <p className="py-1 text-center">¡Gracias por su compra!</p>
     </div>
   );
 }
 
 export function ReporteTurno({ datos, copia }: { datos: DatosReporte; copia: boolean }) {
   const clase = clasificarDiferencia(datos.diferencia);
+  // Reportes anteriores a la spec 06 no traen origen: todo salió de la caja
+  const conMayor = datos.caja_mayor !== undefined;
+  const gastosCaja = datos.gastos_caja ?? datos.gastos_total;
   return (
     <div className={papel}>
-      <Encabezado sede={datos.sede} copia={copia} />
-      <p className="mt-1 text-center font-bold">REPORTE DE TURNO</p>
-      <Linea />
-      <p>Cajero: {datos.cajero}</p>
-      <Fila izq="Apertura" der={formatearFechaHora(datos.abierto_en)} />
-      <Fila izq="Cierre" der={formatearFechaHora(datos.cerrado_en)} />
-      {datos.cerrado_por_admin && <p>Cerrado por admin: {datos.cerrado_por_admin}</p>}
-      <Linea />
-      <Fila izq={`Ventas (${datos.ventas_cantidad})`} der={formatearPesos(datos.ventas_total)} fuerte />
-      <Fila izq="Efectivo" der={formatearPesos(datos.por_metodo.efectivo)} />
-      <Linea />
-      <p className="font-bold">Otros medios (no van en caja)</p>
-      <Fila izq="QR" der={formatearPesos(datos.por_metodo.transferencia)} />
-      <Fila izq="Tarjeta" der={formatearPesos(datos.por_metodo.tarjeta)} />
-      <Linea />
-      <p className="font-bold">Gastos</p>
-      {datos.gastos.length === 0 && <p>Sin gastos</p>}
-      {datos.gastos.map((g, i) => (
-        <Fila key={i} izq={`${formatearHora(g.hora)} ${g.descripcion}`} der={formatearPesos(g.monto)} />
-      ))}
-      <Fila izq="Total gastos" der={formatearPesos(datos.gastos_total)} fuerte />
-      <Linea />
-      <p className="font-bold">Arqueo</p>
-      <Fila izq="Base" der={formatearPesos(datos.base)} />
-      <Fila izq="+ Ventas efectivo" der={formatearPesos(datos.por_metodo.efectivo)} />
-      <Fila izq="− Gastos" der={formatearPesos(datos.gastos_total)} />
-      <Fila izq="Esperado" der={formatearPesos(datos.esperado)} fuerte />
-      <Fila izq="Contado" der={formatearPesos(datos.contado)} fuerte />
-      <div className="text-[13px]">
-        <Fila izq={nombreDiferencia[clase]} der={formatearPesos(datos.diferencia)} fuerte />
+      <Encabezado sede={datos.sede} copia={copia} regimen />
+      <p className="mt-2 border-y-2 border-black py-1 text-center text-[13px] font-bold tracking-widest">REPORTE DE TURNO</p>
+
+      <div className="mt-2.5">
+        <Seccion>
+          <Fila izq="Cajero" der={<strong>{datos.cajero}</strong>} />
+          <Fila izq="Apertura" der={formatearFechaHora(datos.abierto_en)} />
+          <Fila izq="Cierre" der={formatearFechaHora(datos.cerrado_en)} />
+          {datos.cerrado_por_admin && <Fila izq="Cerrado por admin" der={datos.cerrado_por_admin} />}
+        </Seccion>
       </div>
       <Linea />
-      <p className="font-bold">Productos vendidos</p>
-      {datos.productos.length === 0 && <p>Sin ventas</p>}
-      {datos.productos.map((p, i) => (
-        <Fila key={i} izq={`${p.unidades} ${p.nombre}`} der={formatearPesos(p.valor)} />
-      ))}
-      <div className="mt-10 grid grid-cols-2 gap-4 text-center">
+
+      <Seccion titulo={`Ventas (${datos.ventas_cantidad})`}>
+        <Fila izq="Efectivo" der={formatearPesos(datos.por_metodo.efectivo)} />
+        <Fila izq="QR" der={formatearPesos(datos.por_metodo.transferencia)} />
+        <Fila izq="Tarjeta" der={formatearPesos(datos.por_metodo.tarjeta)} />
+        <Destacado izq="Total vendido" der={formatearPesos(datos.ventas_total)} />
+      </Seccion>
+      <Linea />
+
+      <Seccion titulo="Gastos">
+        {datos.gastos.length === 0 && <p>Sin gastos</p>}
+        <div className="flex flex-col gap-1.5">
+          {datos.gastos.map((g, i) => (
+            <div key={i}>
+              <Fila izq={`${formatearHora(g.hora)}  ${g.descripcion}`} der={formatearPesos(g.monto)} />
+              {conMayor && <p className="pl-3 text-[11px]">↳ {describirOrigen(g)}</p>}
+            </div>
+          ))}
+        </div>
+        {datos.gastos.length > 0 && (
+          <div className="mt-1.5">
+            {conMayor && (
+              <>
+                <Fila izq="De caja" der={formatearPesos(gastosCaja)} />
+                <Fila izq="De caja mayor" der={formatearPesos(datos.gastos_mayor ?? 0)} />
+              </>
+            )}
+            <Destacado izq="Total gastos" der={formatearPesos(datos.gastos_total)} />
+          </div>
+        )}
+      </Seccion>
+      <Linea />
+
+      <Seccion titulo="Arqueo">
+        <Fila izq="Base" der={formatearPesos(datos.base)} />
+        <Fila izq="+ Ventas efectivo" der={formatearPesos(datos.por_metodo.efectivo)} />
+        <Fila izq={conMayor ? "− Gastos de caja" : "− Gastos"} der={formatearPesos(gastosCaja)} />
+        <Destacado izq="Esperado" der={formatearPesos(datos.esperado)} />
+        <Fila izq="Contado" der={formatearPesos(datos.contado)} fuerte />
+        <div className="mt-1.5 border-2 border-black px-1.5 py-1 text-[14px]">
+          <Fila izq={nombreDiferencia[clase]} der={formatearPesos(datos.diferencia)} fuerte />
+        </div>
+      </Seccion>
+
+      {datos.caja_mayor && (
+        <>
+          <Linea />
+          <Seccion titulo="A caja mayor">
+            <Fila izq="Efectivo" der={formatearPesos(datos.caja_mayor.efectivo)} />
+            <Fila izq="QR" der={formatearPesos(datos.caja_mayor.transferencia)} />
+            <Fila izq="Tarjeta" der={formatearPesos(datos.caja_mayor.tarjeta)} />
+            <Destacado izq="Total a caja mayor" der={formatearPesos(datos.caja_mayor.total)} />
+            <div className="mt-1.5 border-2 border-black px-1.5 py-1 text-[14px]">
+              <Fila izq="Queda en caja" der={formatearPesos(datos.queda_en_caja ?? datos.contado)} fuerte />
+            </div>
+          </Seccion>
+        </>
+      )}
+      <Linea />
+
+      <Seccion titulo="Productos vendidos">
+        {datos.productos.length === 0 && <p>Sin ventas</p>}
+        {datos.productos.map((p, i) => (
+          <Fila key={i} izq={`${p.unidades}  ${p.nombre}`} der={formatearPesos(p.valor)} />
+        ))}
+      </Seccion>
+
+      <div className="mt-14 grid grid-cols-2 gap-4 text-center">
         <div className="border-t border-black pt-1">Cajero</div>
         <div className="border-t border-black pt-1">Encargado</div>
       </div>

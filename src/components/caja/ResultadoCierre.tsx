@@ -1,8 +1,8 @@
 "use client";
 
-import { CircleCheck, Printer, TrendingDown, TrendingUp, UserRoundCog } from "lucide-react";
+import { CircleCheck, Landmark, Printer, TrendingDown, TrendingUp, UserRoundCog } from "lucide-react";
 import { formatearPesos } from "@/lib/dominio/dinero";
-import { clasificarDiferencia, nombreDiferencia, type ClaseDiferencia } from "@/lib/dominio/cobro";
+import { METODOS, clasificarDiferencia, nombreDiferencia, type ClaseDiferencia } from "@/lib/dominio/cobro";
 import type { DatosReporte } from "@/lib/dominio/documentos";
 import { Boton } from "@/components/ui/Boton";
 import { useImprimir } from "@/components/impresion/ProveedorImpresion";
@@ -43,6 +43,28 @@ export function ResultadoCierre({ reporte }: { reporte: DatosReporte }) {
           </div>
           <p className="num text-2xl font-bold">{formatearPesos(reporte.diferencia)}</p>
         </div>
+
+        {reporte.caja_mayor && (
+          <dl className="flex flex-col gap-1 rounded-tarjeta border border-borde bg-superficie p-4 text-sm">
+            <dt className="mb-1 flex items-center gap-1.5 font-semibold text-texto-2">
+              <Landmark size={16} aria-hidden /> A caja mayor
+            </dt>
+            {METODOS.map((m) => (
+              <div key={m.valor} className="flex justify-between">
+                <dt className="text-texto-2">{m.nombre}</dt>
+                <dd className="num">{formatearPesos(reporte.caja_mayor![m.valor])}</dd>
+              </div>
+            ))}
+            <div className="flex justify-between border-t border-borde pt-1 font-semibold">
+              <dt>Total</dt>
+              <dd className="num">{formatearPesos(reporte.caja_mayor.total)}</dd>
+            </div>
+            <div className="mt-2 flex justify-between text-base font-semibold">
+              <dt>Queda en caja</dt>
+              <dd className="num">{formatearPesos(reporte.queda_en_caja ?? reporte.contado)}</dd>
+            </div>
+          </dl>
+        )}
 
         <Boton icono={<Printer size={20} aria-hidden />} onClick={() => imprimir({ tipo: "reporte", datos: reporte, copia: true })}>
           Reimprimir reporte

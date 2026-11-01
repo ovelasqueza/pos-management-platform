@@ -22,6 +22,7 @@ async function main() {
   const tablas = [
     "sedes", "perfiles", "categorias", "productos", "productos_sede", "costos_producto_sede",
     "productos_vendibles", "turnos", "contadores_venta", "ventas", "lineas_venta", "gastos",
+    "caja_mayor_saldos", "caja_mayor_movimientos",
   ];
   for (const t of tablas) {
     const { count, error } = await s.from(t).select("*", { count: "exact", head: true });
@@ -33,8 +34,13 @@ async function main() {
   const rpcs: [string, Record<string, unknown>][] = [
     ["aplicar_precio_referencia", { p_producto: "00000000-0000-0000-0000-000000000000" }],
     ["abrir_turno", { p_base: 0 }],
-    ["registrar_gasto", { p_monto: 1, p_descripcion: "x" }],
-    ["cerrar_turno", { p_turno: "00000000-0000-0000-0000-000000000000", p_contado: 0 }],
+    // Versiones de las migraciones 15 y 16 (caja mayor)
+    ["registrar_gasto", { p_monto: 1, p_descripcion: "x", p_mayor_efectivo: 0, p_mayor_transferencia: 0, p_mayor_tarjeta: 0 }],
+    ["cerrar_turno", { p_turno: "00000000-0000-0000-0000-000000000000", p_contado: 0, p_a_mayor: 0 }],
+    ["caja_mayor_saldo", {}],
+    ["base_sugerida", {}],
+    ["caja_mayor_ajustar", { p_sede: "00000000-0000-0000-0000-000000000000", p_parte: "efectivo", p_monto: 1, p_descripcion: "x" }],
+    ["caja_mayor_fijar", { p_sede: "00000000-0000-0000-0000-000000000000", p_parte: "efectivo", p_saldo: 0, p_descripcion: "x" }],
     ["rep_resumen", { p_sede: null, p_desde: "2026-10-01", p_hasta: "2026-10-28" }],
     ["rep_ventas_por_dia", { p_sede: null, p_desde: "2026-10-01", p_hasta: "2026-10-28" }],
     ["rep_productos", { p_sede: null, p_desde: "2026-10-01", p_hasta: "2026-10-28" }],

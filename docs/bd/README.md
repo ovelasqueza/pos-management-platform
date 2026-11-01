@@ -20,13 +20,22 @@ Después de ejecutar cada uno, marca la casilla y anota la fecha en la tabla.
 | 12 | `supabase/migrations/20261031120000_sedes_nit.sql` | **Requiere el 11.** Columna opcional `sedes.nit` (solo números, dígito de verificación opcional: `900123456-7`). `privado.ticket` incluye el NIT; el ticket imprime "NIT …" y "Régimen simplificado" en la cabecera | [x] verificado 2026-10-31 (columna `sedes.nit` existe) |
 | 13 | `supabase/migrations/20261031130000_inventario.sql` | **Inventario por fecha (spec 05), solo admin.** Tablas `articulos_inventario` (por sede, con unidad y costo; nunca salen en la caja), `inventarios` (sede + fecha, En curso / Finalizado; uno en curso por sede) y `lineas_inventario` (copias de nombre, unidad y costo; cantidades con 3 decimales en artículos, enteros en productos). Vista `inventarios_resumen` con totales. RPC `inv_crear`, `inv_cantidad`, `inv_agregar`, `inv_quitar`, `inv_actualizar_costos`, `inv_editar`, `inv_finalizar`, `inv_reabrir`, `inv_borrar`. No modifica tablas ni funciones existentes | [x] verificado 2026-10-31 (3 tablas, vista y 9 RPC existen) |
 | 14 | `supabase/migrations/20261031140000_inventario_altas.sql` | **Requiere el 13.** Altas automáticas en el inventario En curso de la sede: materias primas nuevas o reactivadas y productos nuevos, habilitados de nuevo o reactivados entran solos (cantidad vacía, costo vigente). Solo agrega líneas; los finalizados no cambian. Triggers sobre `articulos_inventario`, `productos_sede` y `productos`; no cambia ventas ni la caja | [x] verificado 2026-10-31 (3 triggers existen) |
+| 15 | `supabase/migrations/20261101100000_caja_mayor.sql` | **Caja mayor (spec 06).** Tablas `caja_mayor_saldos` (por sede: Efectivo, QR, Tarjeta; nunca negativo) y `caja_mayor_movimientos` (inmutable). Columnas `gastos.monto_mayor`, `gastos.parte_mayor`, `gastos.monto_caja` (calculada) y `turnos.efectivo_a_mayor`. El esperado ahora resta solo lo que salió de la caja. Nuevas versiones de `registrar_gasto` (origen), `anular_gasto` (devuelve a caja mayor), `cerrar_turno` (efectivo a caja mayor; QR y tarjeta pasan solos), `rep_caja_turno` y `rep_cuadre_diario`. RPC nuevas: `caja_mayor_saldo`, `base_sugerida`, `caja_mayor_ajustar`, `caja_mayor_fijar`. Gastos y turnos anteriores quedan como caja; la caja mayor arranca en $ 0. **Publicar la app el mismo día** (la versión anterior sigue funcionando, pero sin caja mayor en gastos ni envío de efectivo) | [x] verificado 2026-11-01 (2 tablas, 4 RPC; saldos = suma de movimientos) |
+| 16 | `supabase/migrations/20261101110000_gastos_varias_partes.sql` | **Requiere el 15.** Un gasto de caja mayor puede salir de varias partes a la vez: columnas `gastos.mayor_efectivo`, `mayor_transferencia` y `mayor_tarjeta` (reemplazan `parte_mayor`; los gastos existentes conservan su parte). Nueva `registrar_gasto(p_monto, p_descripcion, p_mayor_efectivo, p_mayor_transferencia, p_mayor_tarjeta)`; la de 4 argumentos sigue funcionando para la app anterior. `anular_gasto` devuelve cada parte. El error de saldo dice qué parte no alcanza. Reporte de turno y "Ver caja" traen las partes de cada gasto | [x] verificado 2026-11-01 (columnas `mayor_*` existen, `parte_mayor` eliminada, 10 gastos coherentes) |
+| 17 | `supabase/migrations/20261101120000_reporte_nit.sql` | **Requiere el 12 y el 16.** El reporte de turno guarda el NIT de la sede y lo imprime en la cabecera. Solo cambia `privado.armar_reporte`; aplica a los turnos que se cierren después | [x] verificado 2026-11-01 (cierre de las 2:40 p. m. imprime el NIT) |
 
 
 
 
 ## Verificación
 
-`npm run verificar-bd` revisa (solo lectura) que tablas, RPC y bucket existan. Última verificación: 2026-10-29, todo OK (migraciones 01 a 09).
+`npm run verificar-bd` revisa (solo lectura) que tablas, RPC y bucket existan. Última verificación: 2026-11-01, todo OK (migraciones 01 a 17).
+
+Confirmar el 17 en el SQL Editor (solo lectura; debe dar `true`):
+
+```sql
+select pg_get_functiondef('privado.armar_reporte(uuid,int,int,public.perfiles,int)'::regprocedure) like '%''nit''%';
+```
 
 > `NEXT_PUBLIC_SUPABASE_URL` debe ser solo `https://<proyecto>.supabase.co`, sin `/rest/v1/`.
 

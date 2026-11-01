@@ -99,6 +99,11 @@ export type FilaGasto = {
   id: string;
   creado_en: string;
   monto: number;
+  monto_caja: number;
+  monto_mayor: number;
+  mayor_efectivo: number;
+  mayor_transferencia: number;
+  mayor_tarjeta: number;
   descripcion: string;
   anulado_en: string | null;
   turno: { sede: { nombre: string } | null; cajero: { nombre_completo: string } | null } | null;
@@ -110,7 +115,7 @@ export async function listarGastos(sedeId: string | null, rango: Rango, pagina: 
   let q = supabase
     .from("gastos")
     .select(
-      "id, creado_en, monto, descripcion, anulado_en, turno:turnos!inner(sede_id, sede:sedes(nombre), cajero:perfiles!turnos_cajero_id_fkey(nombre_completo))",
+      "id, creado_en, monto, monto_caja, monto_mayor, mayor_efectivo, mayor_transferencia, mayor_tarjeta, descripcion, anulado_en, turno:turnos!inner(sede_id, sede:sedes(nombre), cajero:perfiles!turnos_cajero_id_fkey(nombre_completo))",
       { count: "exact" },
     )
     .gte("creado_en", inicio)
@@ -175,10 +180,14 @@ export type FilaCuadre = {
   efectivo: number;
   transferencia: number;
   tarjeta: number;
+  /** Gastos que salieron de la caja (los que se restan del esperado) */
   gastos: number;
   esperado: number;
   contado: number;
   diferencia: number;
+  /** Spec 06: gastos pagados con caja mayor y efectivo enviado a caja mayor */
+  gastosMayor: number;
+  aMayor: number;
 };
 
 export async function obtenerCuadreDiario(sedeId: string | null, rango: Rango) {
@@ -196,7 +205,7 @@ export async function obtenerCuadreDiario(sedeId: string | null, rango: Rango) {
   if (cuadre.error) fallar("el cuadre diario", cuadre.error);
   if (a.error) fallar("los turnos abiertos", a.error);
 
-  const filas = (cuadre.data as Record<keyof FilaCuadre, string | number>[]).map(
+  const filas = (cuadre.data as Record<string, string | number | undefined>[]).map(
     (f): FilaCuadre => ({
       fecha: String(f.fecha),
       turnos: Number(f.turnos),
@@ -208,6 +217,8 @@ export async function obtenerCuadreDiario(sedeId: string | null, rango: Rango) {
       esperado: Number(f.esperado),
       contado: Number(f.contado),
       diferencia: Number(f.diferencia),
+      gastosMayor: Number(f.gastos_mayor ?? 0),
+      aMayor: Number(f.a_mayor ?? 0),
     }),
   );
   return { filas, turnosAbiertos: a.count ?? 0 };

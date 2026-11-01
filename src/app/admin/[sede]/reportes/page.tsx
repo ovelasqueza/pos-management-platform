@@ -18,6 +18,7 @@ import {
 import { leerRango, formatearDia, formatearFechaHora, type Rango } from "@/lib/dominio/fechas";
 import { formatearPesos } from "@/lib/dominio/dinero";
 import { nombreMetodo } from "@/lib/dominio/cobro";
+import { describirOrigen, origenDeGasto } from "@/lib/dominio/cajaMayor";
 import { Encabezado } from "@/components/admin/Encabezado";
 import { FiltroFechas } from "@/components/admin/FiltroFechas";
 import { DetalleVenta } from "@/components/admin/DetalleVenta";
@@ -151,6 +152,7 @@ async function Gastos({ ctx }: { ctx: Contexto }) {
                 <td className={td}>
                   <span className={g.anulado_en ? "line-through" : ""}>{g.descripcion}</span>
                   {g.anulado_en && <span className="ml-2 rounded-control bg-suave px-2 py-0.5 text-xs">Anulado</span>}
+                  {origenDeGasto(g) !== "caja" && <span className="block text-xs text-texto-3">{describirOrigen(g)}</span>}
                 </td>
                 <td className={`${td} num text-right ${g.anulado_en ? "line-through" : "font-semibold"}`}>{formatearPesos(g.monto)}</td>
               </tr>
@@ -226,9 +228,11 @@ const COLUMNAS_CUADRE: { clave: Exclude<keyof FilaCuadre, "fecha" | "turnos" | "
   { clave: "efectivo", nombre: "Efectivo" },
   { clave: "transferencia", nombre: "QR" },
   { clave: "tarjeta", nombre: "Tarjeta" },
-  { clave: "gastos", nombre: "Gastos" },
+  { clave: "gastos", nombre: "Gastos caja" },
   { clave: "esperado", nombre: "Esperado" },
   { clave: "contado", nombre: "Contado" },
+  { clave: "gastosMayor", nombre: "Gastos mayor", clase: "hidden xl:table-cell" },
+  { clave: "aMayor", nombre: "A caja mayor", clase: "hidden xl:table-cell" },
 ];
 
 /** Una fila por día: lo que entró por cada medio y si el efectivo llegó completo. */

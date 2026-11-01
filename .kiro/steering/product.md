@@ -71,14 +71,23 @@ POS web para una empresa con varias sedes de dos tipos: **Panadería** y **Asade
 
 ### Gastos
 
-- Gastos = salidas de efectivo de la caja durante el turno, con descripción obligatoria (máx. 120).
-- No pueden superar el efectivo esperado. El rechazo no revela cuánto hay (arqueo ciego).
-- Se pueden anular mientras el turno está abierto. El gasto anulado no cuenta en el esperado ni en los reportes (se muestra tachado).
+- Gastos = salidas de dinero durante el turno, con descripción obligatoria (máx. 120).
+- El cajero escoge de dónde sale: **Caja** (el cajón del turno), **Caja mayor** o **Ambas**. De la caja mayor escribe cuánto sale de cada parte (Efectivo, QR, Tarjeta; puede usar varias a la vez). En Ambas, el resto sale del cajón.
+- Lo que sale de la caja no puede superar el efectivo esperado. El rechazo no revela cuánto hay (arqueo ciego). Lo que sale de la caja mayor no puede superar el saldo de esa parte.
+- Se pueden anular mientras el turno está abierto. El gasto anulado no cuenta en el esperado ni en los reportes (se muestra tachado) y devuelve a la caja mayor lo que salió de ella.
+
+### Caja mayor (spec 06)
+
+- Un saldo **por sede**, discriminado en Efectivo, QR y Tarjeta. Nunca queda en negativo.
+- Entra al cerrar cada turno: todo el QR y la tarjeta del turno, y el efectivo que el cajero decide enviar. Sale con gastos pagados con caja mayor.
+- El cajero ve el saldo pero no lo modifica. Solo el admin suma, quita o fija el saldo (con descripción) y ve los movimientos.
+- Cada movimiento queda registrado y no se modifica.
 
 ### Cierre y documentos
 
-- Efectivo esperado = base + ventas en efectivo − gastos vigentes.
+- Efectivo esperado = base + ventas en efectivo − gastos vigentes que salieron de la caja.
 - Cierre con **arqueo ciego**: el cajero cuenta sin ver el esperado. Diferencia = contado − esperado (faltante o sobrante).
+- Después indica cuánto del efectivo contado va a la caja mayor. Lo demás queda en caja y aparece como base sugerida del siguiente turno de la sede.
 - Se imprime el reporte de turno (80 mm) con firmas de cajero y encargado. El ticket de venta también es de 80 mm.
 - Reimpresiones llevan la marca **COPIA**.
 

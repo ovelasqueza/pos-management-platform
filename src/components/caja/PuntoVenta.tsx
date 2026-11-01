@@ -226,8 +226,8 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
     setVentana("cierre");
   }
 
-  async function cerrarTurno(contado: number) {
-    const { data, error } = await supabase.rpc("cerrar_turno", { p_turno: turnoId, p_contado: contado });
+  async function cerrarTurno(contado: number, aMayor: number) {
+    const { data, error } = await supabase.rpc("cerrar_turno", { p_turno: turnoId, p_contado: contado, p_a_mayor: aMayor });
     if (error) {
       if (esCodigo(error, "TURNO_CERRADO")) {
         turnoCerradoPorOtro();

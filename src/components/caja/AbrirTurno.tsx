@@ -18,12 +18,14 @@ type Props = {
   ultimoReporte: DatosReporte | null;
   /** Turno abierto por otro cajero en esta sede (una caja por sede) */
   ocupada: { cajero: string; abierto_en: string } | null;
+  /** Lo que quedó en caja en el último cierre de la sede (el cajero la puede cambiar) */
+  baseSugerida: number | null;
 };
 
-export function AbrirTurno({ sede, cajero, ultimoReporte, ocupada }: Props) {
+export function AbrirTurno({ sede, cajero, ultimoReporte, ocupada, baseSugerida }: Props) {
   const router = useRouter();
   const imprimir = useImprimir();
-  const [base, setBase] = useState("");
+  const [base, setBase] = useState(baseSugerida === null ? "" : String(baseSugerida));
   const [error, setError] = useState<string>();
   const [pendiente, iniciar] = useTransition();
 
@@ -90,6 +92,9 @@ export function AbrirTurno({ sede, cajero, ultimoReporte, ocupada }: Props) {
           <div className="flex w-full max-w-sm flex-col gap-4">
             <h1 className="text-center text-2xl font-semibold">Abrir turno</h1>
             <PantallaMonto etiqueta="Base de caja" texto={base} />
+            {baseSugerida !== null && (
+              <p className="-mt-2 text-center text-sm text-texto-3">Quedó en caja en el último cierre</p>
+            )}
             <TecladoNumerico valor={base} onCambiar={setBase} onEnter={() => !pendiente && abrir()} />
             {error && <Aviso>{error}</Aviso>}
             <Boton variante="primario" tamano="lg" disabled={pendiente} onClick={abrir} icono={<LockOpen size={22} aria-hidden />}>

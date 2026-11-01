@@ -6,6 +6,7 @@ import { formatearPesos, leerPesos } from "@/lib/dominio/dinero";
 import { formatearFechaHora, formatearHora } from "@/lib/dominio/fechas";
 import { clasificarDiferencia, nombreDiferencia, type ClaseDiferencia } from "@/lib/dominio/cobro";
 import type { DatosReporte } from "@/lib/dominio/documentos";
+import { envioValido, quedaEnCaja } from "@/lib/dominio/cajaMayor";
 import { cerrarTurnoAdmin } from "@/app/admin/[sede]/turnos/acciones";
 import { Boton } from "@/components/ui/Boton";
 import { Campo } from "@/components/ui/Campo";
@@ -64,15 +65,20 @@ function VerReporte({ reporte, cerrar }: { reporte: DatosReporte; cerrar: () => 
 
 function CerrarTurno({ turno, cerrar, alCerrar }: { turno: TurnoFila; cerrar: () => void; alCerrar: (r: DatosReporte) => void }) {
   const [texto, setTexto] = useState("");
+  const [textoMayor, setTextoMayor] = useState("");
   const [error, setError] = useState<string>();
   const [pendiente, iniciar] = useTransition();
+
+  const contadoActual = leerPesos(texto, 0);
+  const mayorActual = textoMayor.trim() === "" ? 0 : leerPesos(textoMayor, 0);
 
   function confirmar() {
     const contado = leerPesos(texto, 0);
     if (contado === null) return setError("Escribe el efectivo contado");
+    if (mayorActual === null || !envioValido(contado, mayorActual)) return setError("A caja mayor no puede ser más que lo contado");
     setError(undefined);
     iniciar(async () => {
-      const r = await cerrarTurnoAdmin(turno.id, contado);
+      const r = await cerrarTurnoAdmin(turno.id, contado, mayorActual);
       if (r.error || !r.reporte) setError(r.error);
       else alCerrar(r.reporte);
     });
@@ -85,6 +91,22 @@ function CerrarTurno({ turno, cerrar, alCerrar }: { turno: TurnoFila; cerrar: ()
           {turno.cajero} · {turno.sede} · desde {formatearFechaHora(turno.abiertoEn)}
         </p>
         <Campo etiqueta="Efectivo contado" inputMode="numeric" value={texto} onChange={(e) => setTexto(e.target.value)} className="num" autoFocus />
+        <Campo
+          etiqueta="A caja mayor (efectivo)"
+          inputMode="numeric"
+          placeholder="0"
+          value={textoMayor}
+          onChange={(e) => setTextoMayor(e.target.value)}
+          className="num"
+        />
+        <p className="flex justify-between text-sm text-texto-2">
+          <span>Queda en caja · QR y tarjeta pasan solos a caja mayor</span>
+          <span className="num font-semibold text-texto">
+            {contadoActual !== null && mayorActual !== null && envioValido(contadoActual, mayorActual)
+              ? formatearPesos(quedaEnCaja(contadoActual, mayorActual))
+              : "—"}
+          </span>
+        </p>
         {error && <Aviso>{error}</Aviso>}
         <Boton variante="primario" disabled={pendiente} onClick={confirmar} icono={<Lock size={18} aria-hidden />}>
           {pendiente ? "Cerrando…" : "Cerrar turno"}

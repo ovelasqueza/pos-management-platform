@@ -40,6 +40,10 @@ const mensajes: Record<string, string> = {
   LINEA_INVALIDA: "No se puede agregar a este inventario",
   LINEA_NO_EXISTE: "La línea ya no existe",
   YA_EN_INVENTARIO: "Ya está en el inventario",
+  CAJA_MAYOR_INSUFICIENTE: "No hay suficiente en caja mayor",
+  ENVIO_MAYOR_INVALIDO: "No puede ser más que lo contado",
+  ORIGEN_INVALIDO: "Revisa de dónde sale el dinero",
+  SEDE_NO_EXISTE: "La sede no existe",
 };
 
 type ErrorBD = { code?: string; message?: string } | null | undefined;

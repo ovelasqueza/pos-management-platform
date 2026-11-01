@@ -27,7 +27,7 @@ export default async function Caja() {
   if (turno?.dispositivo && turno.dispositivo !== equipo) redirect("/salir?motivo=otro-equipo");
 
   if (!turno) {
-    const [{ data: ultimo }, { data: ocupada }] = await Promise.all([
+    const [{ data: ultimo }, { data: ocupada }, { data: sugerida }] = await Promise.all([
       supabase
         .from("turnos")
         .select("reporte")
@@ -38,6 +38,8 @@ export default async function Caja() {
         .maybeSingle<{ reporte: DatosReporte }>(),
       // Una caja por sede: ¿otro cajero tiene el turno abierto?
       supabase.rpc("turno_abierto_en_mi_sede"),
+      // Lo que quedó en caja en el último cierre de la sede (spec 06)
+      supabase.rpc("base_sugerida"),
     ]);
 
     return (
@@ -47,6 +49,7 @@ export default async function Caja() {
           cajero={cajero.nombreCompleto}
           ultimoReporte={ultimo?.reporte ?? null}
           ocupada={(ocupada as { cajero: string; abierto_en: string } | null) ?? null}
+          baseSugerida={typeof sugerida === "number" ? sugerida : null}
         />
       </ProveedorImpresion>
     );

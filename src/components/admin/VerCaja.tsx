@@ -7,6 +7,7 @@ import { formatearPesos } from "@/lib/dominio/dinero";
 import { formatearFechaHora, formatearHora } from "@/lib/dominio/fechas";
 import { nombreMetodo, type MetodoPago } from "@/lib/dominio/cobro";
 import { mensajeDeError } from "@/lib/dominio/errores";
+import { describirOrigen, origenDeGasto } from "@/lib/dominio/cajaMayor";
 import { Boton } from "@/components/ui/Boton";
 import { Modal } from "@/components/ui/Modal";
 import { Aviso } from "@/components/ui/Aviso";
@@ -21,9 +22,21 @@ type CajaTurno = {
   ventas_total: number;
   por_metodo: Record<MetodoPago, number>;
   gastos_total: number;
+  /** Spec 06: gastos que salieron de la caja / de la caja mayor */
+  gastos_caja?: number;
+  gastos_mayor?: number;
   esperado: number;
   ultimas_ventas: { id: string; numero: number; creado_en: string; total: number; metodo: MetodoPago }[];
-  gastos: { descripcion: string; monto: number; hora: string }[];
+  gastos: {
+    descripcion: string;
+    monto: number;
+    hora: string;
+    monto_caja?: number;
+    monto_mayor?: number;
+    /** Lo que salió de cada parte de la caja mayor (reportes anteriores traen parte_mayor) */
+    mayor?: Partial<Record<MetodoPago, number>>;
+    parte_mayor?: MetodoPago | null;
+  }[];
 };
 
 const REFRESCO_MS = 30_000;
@@ -70,8 +83,8 @@ export function VerCaja({ turnoId, cerrar }: { turnoId: string; cerrar: () => vo
               <p className="text-xs font-semibold">EFECTIVO QUE DEBE HABER EN CAJA</p>
               <p className="num text-4xl font-bold tracking-tight">{formatearPesos(caja.esperado)}</p>
               <p className="num text-sm">
-                Base {formatearPesos(caja.base)} + efectivo {formatearPesos(caja.por_metodo.efectivo)} − gastos{" "}
-                {formatearPesos(caja.gastos_total)}
+                Base {formatearPesos(caja.base)} + efectivo {formatearPesos(caja.por_metodo.efectivo)} − gastos de caja{" "}
+                {formatearPesos(caja.gastos_caja ?? caja.gastos_total)}
               </p>
             </div>
 
@@ -105,7 +118,10 @@ export function VerCaja({ turnoId, cerrar }: { turnoId: string; cerrar: () => vo
                   {caja.gastos.map((g, i) => (
                     <li key={i} className="flex items-center gap-3 border-b border-suave px-3 py-2 last:border-0">
                       <span className="num text-texto-3">{formatearHora(g.hora)}</span>
-                      <span className="mr-auto">{g.descripcion}</span>
+                      <span className="mr-auto">
+                        {g.descripcion}
+                        {origenDeGasto(g) !== "caja" && <span className="block text-xs text-texto-3">{describirOrigen(g)}</span>}
+                      </span>
                       <span className="num font-semibold">{formatearPesos(g.monto)}</span>
                     </li>
                   ))}

@@ -2,7 +2,7 @@ import type { MetodoPago } from "./cobro";
 
 /** Datos que devuelve la BD para imprimir (ver privado.ticket y privado.armar_reporte). */
 
-/** `nit` solo viene en el ticket (script 12); el reporte de turno no lo trae. */
+/** `nit`: ticket desde el script 12; reporte de turno desde el script 17 (los anteriores no lo traen). */
 type DatosSede = { nombre: string; nit?: string | null; direccion: string | null; telefono: string | null };
 
 export type DatosTicket = {
@@ -31,11 +31,27 @@ export type DatosReporte = {
   ventas_cantidad: number;
   ventas_total: number;
   por_metodo: Record<MetodoPago, number>;
-  gastos: { descripcion: string; monto: number; hora: string }[];
+  gastos: {
+    descripcion: string;
+    monto: number;
+    hora: string;
+    /** Desde la spec 06; los reportes anteriores no los traen (todo salió de la caja) */
+    monto_caja?: number;
+    monto_mayor?: number;
+    /** Lo que salió de cada parte de la caja mayor (reportes anteriores traen parte_mayor) */
+    mayor?: Partial<Record<MetodoPago, number>>;
+    parte_mayor?: MetodoPago | null;
+  }[];
   gastos_total: number;
+  /** Spec 06: gastos que salieron de la caja (se restan del esperado) y de la caja mayor */
+  gastos_caja?: number;
+  gastos_mayor?: number;
   esperado: number;
   contado: number;
   diferencia: number;
+  /** Spec 06: lo que entró a la caja mayor al cerrar */
+  caja_mayor?: Record<MetodoPago, number> & { total: number };
+  queda_en_caja?: number;
   productos: { nombre: string; unidades: number; valor: number }[];
 };
 
