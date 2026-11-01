@@ -28,6 +28,10 @@ export const formatearHora = (iso: string | Date) => soloHora.format(new Date(is
 /** "2026-10-28" → "28 oct" */
 export const formatearDia = (fecha: string) => diaCorto.format(new Date(`${fecha}T00:00:00Z`));
 
+const diaLargo = new Intl.DateTimeFormat("es-CO", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short", year: "numeric" });
+/** "2026-10-31" → "sáb, 31 oct 2026" */
+export const formatearFecha = (fecha: string) => diaLargo.format(new Date(`${fecha}T00:00:00Z`));
+
 /** Fecha de hoy en Bogotá como "YYYY-MM-DD". */
 export const hoyBogota = (ahora = new Date()) => isoLocal.format(ahora);
 

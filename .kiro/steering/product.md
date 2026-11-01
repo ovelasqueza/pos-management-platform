@@ -90,7 +90,7 @@ POS web para una empresa con varias sedes de dos tipos: **Panadería** y **Asade
 ### Inventario por fecha (pendiente, spec 05)
 
 - Conteo físico por sede en una fecha, valorizado con costos. Independiente de las ventas. Solo admin. Detalles en `.kiro/specs/05-inventario/`.
-- Incluye productos de venta y **artículos de inventario** por sede (materias primas, empaques) con unidad (bulto, kilo, libra…) y cantidades con fracción (9½ bultos). Los artículos nunca aparecen en la caja.
+- Incluye productos de venta y **materias primas** por sede (harina, aceite, carbón, empaques) con unidad (bulto, kilo, libra…) y cantidades con fracción (9½ bultos). Las materias primas nunca aparecen en la caja. En la BD se llaman `articulos_inventario`.
 - Un inventario en curso por sede; se continúa hasta finalizarlo. Uno finalizado se puede volver a editar. Se descarga en Excel (CSV), sin PDF.
 
 ### Carga de productos desde el software anterior

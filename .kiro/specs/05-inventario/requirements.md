@@ -4,6 +4,8 @@
 
 Depende de: specs 01 y 02 (sedes, productos y costos por sede).
 
+> **Nombre en pantalla (2026-10-31, pedido del usuario):** lo que esta spec llama "artículos de inventario" se muestra en la app como **"Materias primas"** (botón, títulos, grupo del inventario y CSV). En la BD y el código sigue siendo `articulos_inventario` / `articulo`.
+
 ## Concepto
 
 El admin hace un **conteo físico** de lo que hay en una sede en una fecha y lo valoriza con costos. Solo para llevar cuentas: no se compara con las ventas y las ventas no lo afectan. Solo lo maneja el admin.
@@ -38,7 +40,8 @@ El reto: en materia prima se cuenta, por ejemplo, "9 bultos completos y medio bu
 2. Varias sedes pueden tener inventario el mismo día. Una misma sede tiene máximo **un inventario por fecha**.
 3. Nota opcional (máx. 120), por ejemplo "Cierre de mes".
 4. Al crear el inventario se arma la lista inicial con los productos **activos y habilitados** en la sede y los artículos **activos** de la sede, con cantidad vacía y el costo vigente copiado.
-5. El admin puede agregar cualquier producto del catálogo de la sede o artículo de la sede que no esté en la lista, y quitar líneas (con confirmación).
+5. El admin puede agregar cualquier producto del catálogo de la sede o materia prima de la sede que no esté en la lista, y quitar líneas (con confirmación).
+7. **Altas automáticas (2026-10-31, pedido del usuario):** mientras la sede tenga un inventario En curso, entran solos a ese inventario (cantidad vacía, costo vigente): materias primas nuevas o reactivadas de la sede, y productos nuevos, habilitados de nuevo en la sede o reactivados en el catálogo. Los finalizados no cambian. "Agregar otro" queda solo para traer lo que no entra solo (una línea quitada, un producto que la sede no vende).
 6. Solo sedes activas pueden tener inventarios nuevos o editarse. Los de una sede inactiva son de solo consulta.
 
 ## R4. Estados: En curso y Finalizado
@@ -63,6 +66,7 @@ El reto: en materia prima se cuenta, por ejemplo, "9 bultos completos y medio bu
 
 1. La cantidad se guarda sola al salir del campo o con Enter (reglas de autoguardado de la spec 02 R4). Enter pasa a la siguiente línea.
 2. Se muestra quién y cuándo hizo la última modificación.
+3. **Adicionar (2026-10-31, pedido del usuario):** junto a la cantidad hay un campo "+ adicionar" en productos y materias primas. Lo que se escribe ahí (entero en productos; entero o fracción en materias primas) se suma al contado y se guarda; el campo queda vacío para seguir sumando. Se muestra lo sumado ("+5 · total 15"). No se guarda el historial de sumas: para corregir se escribe el total en la cantidad.
 
 ## R7. Ver y descargar
 

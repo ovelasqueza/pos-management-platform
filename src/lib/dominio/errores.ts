@@ -29,6 +29,17 @@ const mensajes: Record<string, string> = {
   GASTO_NO_ANULABLE: "Ese gasto ya no se puede anular",
   CONTADO_INVALIDO: "Escribe el efectivo contado",
   REGISTRO_INMUTABLE: "Este registro no se puede modificar",
+  FECHA_FUTURA: "La fecha no puede ser futura",
+  INVENTARIO_SEDE_INACTIVA: "La sede está inactiva: el inventario es solo de consulta",
+  INVENTARIO_EN_CURSO: "Esta sede ya tiene un inventario en curso",
+  INVENTARIO_FECHA_OCUPADA: "Ya hay un inventario de esta sede en esa fecha",
+  INVENTARIO_FINALIZADO: "El inventario está finalizado",
+  INVENTARIO_NO_EXISTE: "El inventario no existe",
+  NOTA_INVALIDA: "La nota admite máximo 120 caracteres",
+  CANTIDAD_INVALIDA: "Cantidad no válida",
+  LINEA_INVALIDA: "No se puede agregar a este inventario",
+  LINEA_NO_EXISTE: "La línea ya no existe",
+  YA_EN_INVENTARIO: "Ya está en el inventario",
 };
 
 type ErrorBD = { code?: string; message?: string } | null | undefined;

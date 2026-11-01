@@ -15,7 +15,7 @@ begin
   insert into public.perfiles (id, nombre_completo, nombre_usuario, rol, sede_id)
   values (
     new.id,
-    meta ->> 'Yeimi',
+    meta ->> 'nombre_completo',
     meta ->> 'nombre_usuario',
     (meta ->> 'rol')::public.rol_usuario,
     nullif(meta ->> 'sede_id', '')::uuid
