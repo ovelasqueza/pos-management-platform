@@ -151,10 +151,10 @@ export function TablaProductosSede({ sedeId, tipo, filas, categorias }: Props) {
           </thead>
           <tbody>
             {visibles.map((f) => (
-              <tr key={f.productoId} className="border-b border-suave align-top last:border-0">
+              <tr key={f.productoId} className="border-b border-suave align-middle last:border-0">
                 <td className="px-4 py-2">
-                  <div className="flex items-center gap-3">
-                    <FotoProducto id={f.productoId} nombre={f.nombre} url={f.imagenUrl} />
+                  <div className="flex items-center gap-4">
+                    <FotoProducto id={f.productoId} nombre={f.nombre} url={f.imagenUrl} tamano={120} />
                     <div className="min-w-0">
                       <p className={`font-medium ${f.activo ? "" : "text-texto-3"}`}>{f.nombre}</p>
                       <p className="text-xs text-texto-3">

@@ -42,7 +42,7 @@ export function FotoProducto({ id, nombre, url, tamano = 48 }: { id: string; nom
   }
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex shrink-0 flex-col items-center">
       <button
         type="button"
         onClick={() => input.current?.click()}
@@ -58,7 +58,7 @@ export function FotoProducto({ id, nombre, url, tamano = 48 }: { id: string; nom
           }`}
           aria-hidden
         >
-          {subiendo ? <LoaderCircle size={18} className="animate-spin" /> : <Camera size={18} />}
+          {subiendo ? <LoaderCircle size={22} className="animate-spin" /> : <Camera size={22} />}
         </span>
       </button>
       <input ref={input} type="file" accept="image/*" className="sr-only" tabIndex={-1} onChange={(e) => alEscoger(e.target.files?.[0])} />
