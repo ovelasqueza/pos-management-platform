@@ -231,17 +231,9 @@ export function ReporteTurno({ datos, copia }: { datos: DatosReporte; copia: boo
 
 
 /**
- * Apertura del cajón sin venta. El driver de la impresora abre el cajón al imprimir;
- * este papel es lo mínimo que se puede imprimir y deja constancia de quién lo abrió.
+ * Apertura del cajón sin venta. El driver de la impresora abre el cajón al empezar a imprimir;
+ * se manda una página casi vacía (sin texto, 1 mm) para gastar el mínimo de papel.
  */
-export function AperturaCajon({ sede, cajero, fecha }: { sede: string; cajero: string; fecha: string }) {
-  return (
-    <div className={`${papel} text-center text-[11px]`}>
-      <p className="font-bold">APERTURA DE CAJÓN</p>
-      <p>{sede}</p>
-      <p>
-        {cajero} · {formatearFechaHora(fecha)}
-      </p>
-    </div>
-  );
+export function AperturaCajon() {
+  return <div className="h-[1mm] w-[72mm]" />;
 }

@@ -64,5 +64,5 @@ export type DatosReporte = {
 export type Documento =
   | { tipo: "ticket"; datos: DatosTicket; copia: boolean }
   | { tipo: "reporte"; datos: DatosReporte; copia: boolean }
-  /** Papel mínimo para que el driver de la impresora abra el cajón (sin venta) */
-  | { tipo: "cajon"; sede: string; cajero: string; fecha: string };
+  /** Página casi vacía para que el driver de la impresora abra el cajón (sin venta) */
+  | { tipo: "cajon" };

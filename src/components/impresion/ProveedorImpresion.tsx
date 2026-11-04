@@ -53,7 +53,7 @@ export function ProveedorImpresion({ children }: { children: ReactNode }) {
             ) : trabajo.doc.tipo === "reporte" ? (
               <ReporteTurno datos={trabajo.doc.datos} copia={trabajo.doc.copia} />
             ) : (
-              <AperturaCajon sede={trabajo.doc.sede} cajero={trabajo.doc.cajero} fecha={trabajo.doc.fecha} />
+              <AperturaCajon />
             )}
           </div>,
           document.body,

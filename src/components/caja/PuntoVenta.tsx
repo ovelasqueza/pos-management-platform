@@ -322,7 +322,7 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
             <>
               <button
                 type="button"
-                onClick={() => imprimir({ tipo: "cajon", sede, cajero, fecha: new Date().toISOString() })}
+                onClick={() => imprimir({ tipo: "cajon" })}
                 className={botonCabecera}
                 aria-label="Abrir cajón"
               >
