@@ -49,3 +49,27 @@ Haz doble clic en `desinstalar.cmd`.
 - El agente solo escucha dentro del mismo equipo (`127.0.0.1`, puerto 17777). No se puede usar desde otros equipos de la red.
 - Solo responde a las direcciones de la app de la lista anterior.
 - Lo único que puede hacer es abrir el cajón.
+
+## Varias apps en el mismo equipo
+
+Un mismo equipo puede tener el POS y otra app, por ejemplo el inventario, usando un solo agente. Ejecuta el `instalar.cmd` de cada app: el instalador conserva las direcciones que ya estaban y suma las nuevas.
+
+## Para desarrolladores (llevar el botón a otra app)
+
+Esta información es para quien copie el botón a otro proyecto, sea una persona o un asistente de código.
+
+1. **Copiar** la carpeta `herramientas/cajon` tal cual. En `instalar.ps1`, cambiar la lista `$Origenes` por las direcciones donde se abre la nueva app.
+2. **Llamar al agente** desde el navegador (código del cliente):
+   ```ts
+   const r = await fetch("http://127.0.0.1:17777/abrir", { method: "POST", signal: AbortSignal.timeout(1500) });
+   const abrio = r.ok && (await r.json()).ok === true;
+   ```
+   - Debe ser un `POST` **sin cuerpo y sin encabezados**. Así es una petición simple y no hay preflight.
+   - Si falla (sin agente, sin respuesta o error), el `fetch` lanza o `ok` es `false`. Entonces se usa el plan B.
+   - `GET /estado` responde `{ ok, impresora }` y sirve para saber si el agente está corriendo.
+3. **Plan B** cuando el agente no responde:
+   - En el POS: se imprime con `window.print()` una página casi vacía (1 mm, sin texto). El driver de la impresora está configurado para abrir el cajón al empezar a imprimir, así que el cajón abre gastando unos 1 cm de papel. Requiere la impresión directa de Chrome (`--kiosk-printing`).
+   - En apps que no imprimen: se muestra un aviso de que el cajón no se pudo abrir.
+4. **Evitar doble clic**: no llamar de nuevo mientras una llamada está en curso.
+
+El agente manda `ESC p 0 25 250` (`1B 70 00 19 FA`) por la cola de Windows en modo RAW. Con `-Pin 5` manda `1B 70 01 19 FA`.

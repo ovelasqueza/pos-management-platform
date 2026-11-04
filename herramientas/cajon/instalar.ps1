@@ -45,12 +45,23 @@ Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" |
   ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 Start-Sleep -Milliseconds 500
 
-# 3. Copiar el agente y su configuración
+# 3. Copiar el agente y su configuración. Si ya había otra app instalada en este equipo
+#    (por ejemplo el POS y el inventario), se conservan sus direcciones.
 New-Item -ItemType Directory -Force -Path $destino | Out-Null
+$configRuta = Join-Path $destino 'config.json'
+if (Test-Path -LiteralPath $configRuta) {
+  try {
+    $anterior = Get-Content -LiteralPath $configRuta -Raw -Encoding UTF8 | ConvertFrom-Json
+    $Origenes = @(@($anterior.origenes) + $Origenes | Where-Object { $_ } | Select-Object -Unique)
+  } catch { }
+}
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'agente-cajon.ps1') -Destination $agente -Force
 Unblock-File -LiteralPath $agente
 @{ puerto = $Puerto; pin = $Pin; impresora = $elegida; origenes = $Origenes } |
-  ConvertTo-Json | Set-Content -LiteralPath (Join-Path $destino 'config.json') -Encoding UTF8
+  ConvertTo-Json | Set-Content -LiteralPath $configRuta -Encoding UTF8
+Write-Host ''
+Write-Host 'Direcciones permitidas:'
+$Origenes | ForEach-Object { Write-Host "  $_" }
 
 # 4. Arranque automático al iniciar sesión en Windows
 $argumentos = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$agente`""
