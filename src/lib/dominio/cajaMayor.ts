@@ -5,7 +5,7 @@ import { formatearPesos } from "./dinero";
 export type OrigenGasto = "caja" | "mayor" | "ambas";
 
 export const ORIGENES: { valor: OrigenGasto; nombre: string }[] = [
-  { valor: "caja", nombre: "Caja" },
+  { valor: "caja", nombre: "Cajón" },
   { valor: "mayor", nombre: "Caja mayor" },
   { valor: "ambas", nombre: "Ambas" },
 ];
@@ -19,6 +19,12 @@ export type PartesMayor = Record<MetodoPago, number>;
 export const SIN_PARTES: PartesMayor = { efectivo: 0, transferencia: 0, tarjeta: 0 };
 
 export const sumaPartes = (p: PartesMayor) => p.efectivo + p.transferencia + p.tarjeta;
+
+/** Partes de la caja mayor con las que se puede pagar un gasto (la tarjeta no sirve para pagar gastos). */
+export const PARTES_PARA_GASTOS: { valor: MetodoPago; nombre: string }[] = [
+  { valor: "efectivo", nombre: "Efectivo" },
+  { valor: "transferencia", nombre: "QR" },
+];
 
 export type Reparto =
   | { ok: true; montoCaja: number; mayor: PartesMayor }
@@ -81,10 +87,10 @@ export function partesDeGasto(g: GastoConOrigen): PartesMayor {
   return p;
 }
 
-/** "Caja", "Caja mayor · QR $ 5.000", "Cajón $ 6.000 + Caja mayor · Efectivo $ 2.000 + QR $ 2.000". */
+/** "Cajón", "Caja mayor · QR $ 5.000", "Cajón $ 6.000 + Caja mayor · Efectivo $ 2.000 + QR $ 2.000". */
 export function describirOrigen(g: GastoConOrigen): string {
   const origen = origenDeGasto(g);
-  if (origen === "caja") return "Caja";
+  if (origen === "caja") return "Cajón";
   const p = partesDeGasto(g);
   const partes = (["efectivo", "transferencia", "tarjeta"] as const)
     .filter((k) => p[k] > 0)

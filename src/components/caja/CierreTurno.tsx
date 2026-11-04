@@ -53,7 +53,7 @@ export function CierreTurno({ abierto, onCerrar, onConfirmar }: Props) {
     <Modal abierto={abierto} titulo="Cerrar turno" onCerrar={cerrar} ancho="sm">
       {paso === "contar" && (
         <div className="flex flex-col gap-3">
-          <p className="text-sm text-texto-2">Cuenta el efectivo de la caja y escríbelo.</p>
+          <p className="text-sm text-texto-2">Cuenta el efectivo del cajón y escríbelo.</p>
           <PantallaMonto etiqueta="Efectivo contado" texto={contado} />
           <TecladoNumerico valor={contado} onCambiar={setContado} onEnter={() => contado !== "" && setPaso("confirmar")} />
           <Boton variante="primario" tamano="lg" disabled={contado === ""} onClick={() => setPaso("confirmar")}>
@@ -98,7 +98,7 @@ export function CierreTurno({ abierto, onCerrar, onConfirmar }: Props) {
           </div>
           <TecladoNumerico valor={aMayor} onCambiar={setAMayor} onEnter={() => !enviando && confirmar()} />
           <p className="flex justify-between rounded-control bg-suave px-3 py-2">
-            <span className="text-texto-2">Queda en caja</span>
+            <span className="text-texto-2">Queda en cajón</span>
             <span className={`num font-semibold ${envioOk ? "" : "text-peligro"}`}>
               {envioOk ? formatearPesos(quedaEnCaja(valorContado, valorMayor)) : "Más que lo contado"}
             </span>

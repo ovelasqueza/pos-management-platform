@@ -60,7 +60,7 @@ export function ResultadoCierre({ reporte }: { reporte: DatosReporte }) {
               <dd className="num">{formatearPesos(reporte.caja_mayor.total)}</dd>
             </div>
             <div className="mt-2 flex justify-between text-base font-semibold">
-              <dt>Queda en caja</dt>
+              <dt>Queda en cajón</dt>
               <dd className="num">{formatearPesos(reporte.queda_en_caja ?? reporte.contado)}</dd>
             </div>
           </dl>

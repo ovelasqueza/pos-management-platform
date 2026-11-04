@@ -6,9 +6,10 @@ import { crearClienteNavegador } from "@/lib/supabase/browser";
 import { formatearPesos, leerPesos } from "@/lib/dominio/dinero";
 import { formatearHora } from "@/lib/dominio/fechas";
 import { esCodigo, mensajeDeError } from "@/lib/dominio/errores";
-import { METODOS, nombreMetodo, type MetodoPago } from "@/lib/dominio/cobro";
+import { nombreMetodo, type MetodoPago } from "@/lib/dominio/cobro";
 import {
   ORIGENES,
+  PARTES_PARA_GASTOS,
   describirOrigen,
   leerSaldo,
   origenDeGasto,
@@ -205,8 +206,8 @@ export function PanelGastos({ abierto, turnoId, onCerrar, onTurnoCerrado }: Prop
                 <legend className="flex items-center gap-1.5 px-1 text-sm font-semibold text-texto-2">
                   <Landmark size={16} aria-hidden /> De caja mayor
                 </legend>
-                <div className="grid grid-cols-3 gap-2">
-                  {METODOS.map((m) => (
+                <div className="grid grid-cols-2 gap-2">
+                  {PARTES_PARA_GASTOS.map((m) => (
                     <div key={m.valor} className="flex flex-col gap-0.5">
                       <Campo
                         etiqueta={m.nombre}

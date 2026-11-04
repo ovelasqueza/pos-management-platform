@@ -177,7 +177,7 @@ export function ReporteTurno({ datos, copia }: { datos: DatosReporte; copia: boo
           <div className="mt-1.5">
             {conMayor && (
               <>
-                <Fila izq="De caja" der={formatearPesos(gastosCaja)} />
+                <Fila izq="De cajón" der={formatearPesos(gastosCaja)} />
                 <Fila izq="De caja mayor" der={formatearPesos(datos.gastos_mayor ?? 0)} />
               </>
             )}
@@ -190,7 +190,7 @@ export function ReporteTurno({ datos, copia }: { datos: DatosReporte; copia: boo
       <Seccion titulo="Arqueo">
         <Fila izq="Base" der={formatearPesos(datos.base)} />
         <Fila izq="+ Ventas efectivo" der={formatearPesos(datos.por_metodo.efectivo)} />
-        <Fila izq={conMayor ? "− Gastos de caja" : "− Gastos"} der={formatearPesos(gastosCaja)} />
+        <Fila izq={conMayor ? "− Gastos de cajón" : "− Gastos"} der={formatearPesos(gastosCaja)} />
         <Destacado izq="Esperado" der={formatearPesos(datos.esperado)} />
         <Fila izq="Contado" der={formatearPesos(datos.contado)} fuerte />
         <div className="mt-1.5 border-2 border-black px-1.5 py-1 text-[14px]">
@@ -207,7 +207,7 @@ export function ReporteTurno({ datos, copia }: { datos: DatosReporte; copia: boo
             <Fila izq="Tarjeta" der={formatearPesos(datos.caja_mayor.tarjeta)} />
             <Destacado izq="Total a caja mayor" der={formatearPesos(datos.caja_mayor.total)} />
             <div className="mt-1.5 border-2 border-black px-1.5 py-1 text-[14px]">
-              <Fila izq="Queda en caja" der={formatearPesos(datos.queda_en_caja ?? datos.contado)} fuerte />
+              <Fila izq="Queda en cajón" der={formatearPesos(datos.queda_en_caja ?? datos.contado)} fuerte />
             </div>
           </Seccion>
         </>

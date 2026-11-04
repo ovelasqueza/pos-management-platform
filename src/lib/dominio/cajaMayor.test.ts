@@ -48,7 +48,7 @@ describe("origen del gasto", () => {
     expect(partesDeGasto({ monto: 3, monto_mayor: 3, parte_mayor: "transferencia" })).toEqual(partes(0, 3, 0));
   });
   it("texto corto con las partes", () => {
-    expect(describirOrigen({ monto: 5000, monto_mayor: 0 })).toBe("Caja");
+    expect(describirOrigen({ monto: 5000, monto_mayor: 0 })).toBe("Cajón");
     expect(describirOrigen({ monto: 5000, monto_mayor: 5000, parte_mayor: "transferencia" })).toBe("Caja mayor · QR $ 5.000");
     expect(
       describirOrigen({ monto: 10000, monto_caja: 6000, monto_mayor: 4000, mayor: { efectivo: 3000, transferencia: 1000, tarjeta: 0 } }),

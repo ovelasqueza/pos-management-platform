@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, CircleCheck, Lock, LogOut, Receipt, ShoppingCart, Vault, Wallet, X } from "lucide-react";
 import { crearClienteNavegador } from "@/lib/supabase/browser";
 import { cargarProductosVendibles } from "@/lib/caja/productos";
-import { abrirCajonSinPapel } from "@/lib/caja/cajon";
+import { BOTON_CAJON_ACTIVO, abrirCajonSinPapel } from "@/lib/caja/cajon";
 import {
   conciliarCarrito,
   firmaCarrito,
@@ -321,27 +321,23 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
             </span>
           </div>
 
-          <span
-            role="status"
-            title={enLinea ? "En línea" : "Sin conexión"}
-            className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${enLinea ? "bg-white/15" : "bg-peligro"}`}
-          >
-            <span className={`size-2 rounded-full ${enLinea ? "bg-emerald-200" : "bg-white"}`} aria-hidden />
-            <span className="hidden sm:inline">{enLinea ? "En línea" : "Sin conexión"}</span>
-          </span>
+          {/* Solo se muestra sin conexión (con conexión no hace falta avisar) */}
+          {!enLinea && (
+            <span role="status" className="flex items-center gap-2 rounded-full bg-peligro px-3 py-1.5 text-xs font-semibold">
+              <span className="size-2 rounded-full bg-white" aria-hidden />
+              <span className="hidden sm:inline">Sin conexión</span>
+            </span>
+          )}
 
           {/* Al cobrar no se puede cerrar ni salir a la mitad */}
           {!enCobro && (
             <>
-              <button
-                type="button"
-                onClick={abrirCajon}
-                className={botonCabecera}
-                aria-label="Abrir cajón"
-              >
-                <Vault size={20} aria-hidden />
-                <span className="hidden lg:inline">Cajón</span>
-              </button>
+              {BOTON_CAJON_ACTIVO && (
+                <button type="button" onClick={abrirCajon} className={botonCabecera} aria-label="Abrir cajón">
+                  <Vault size={20} aria-hidden />
+                  <span className="hidden lg:inline">Cajón</span>
+                </button>
+              )}
               <button type="button" onClick={pedirCierre} className={botonCabecera}>
                 <Lock size={20} aria-hidden />
                 <span className="hidden lg:inline">Cerrar turno</span>

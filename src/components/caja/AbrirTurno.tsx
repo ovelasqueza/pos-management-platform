@@ -31,7 +31,7 @@ export function AbrirTurno({ sede, cajero, ultimoReporte, ocupada, baseSugerida 
 
   function abrir() {
     if (base === "") {
-      setError("Escribe la base de caja (puede ser 0)");
+      setError("Escribe la base del cajón (puede ser 0)");
       return;
     }
     setError(undefined);
@@ -91,9 +91,9 @@ export function AbrirTurno({ sede, cajero, ultimoReporte, ocupada, baseSugerida 
         ) : (
           <div className="flex w-full max-w-sm flex-col gap-4">
             <h1 className="text-center text-2xl font-semibold">Abrir turno</h1>
-            <PantallaMonto etiqueta="Base de caja" texto={base} />
+            <PantallaMonto etiqueta="Base del cajón" texto={base} />
             {baseSugerida !== null && (
-              <p className="-mt-2 text-center text-sm text-texto-3">Quedó en caja en el último cierre</p>
+              <p className="-mt-2 text-center text-sm text-texto-3">Quedó en el cajón en el último cierre</p>
             )}
             <TecladoNumerico valor={base} onCambiar={setBase} onEnter={() => !pendiente && abrir()} />
             {error && <Aviso>{error}</Aviso>}

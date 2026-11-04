@@ -287,7 +287,7 @@ const COLUMNAS_CUADRE: { clave: Exclude<keyof FilaCuadre, "fecha" | "turnos" | "
   { clave: "efectivo", nombre: "Efectivo" },
   { clave: "transferencia", nombre: "QR" },
   { clave: "tarjeta", nombre: "Tarjeta" },
-  { clave: "gastos", nombre: "Gastos caja" },
+  { clave: "gastos", nombre: "Gastos cajón" },
   { clave: "esperado", nombre: "Esperado" },
   { clave: "contado", nombre: "Contado" },
   { clave: "gastosMayor", nombre: "Gastos mayor", clase: "hidden xl:table-cell" },

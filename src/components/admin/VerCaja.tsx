@@ -91,10 +91,10 @@ export function VerCaja({ turnoId, cerrar }: { turnoId: string; cerrar: () => vo
             </p>
 
             <div className="rounded-tarjeta border-2 border-primario bg-exito-suave px-4 py-3 text-primario-activo">
-              <p className="text-xs font-semibold">EFECTIVO QUE DEBE HABER EN CAJA</p>
+              <p className="text-xs font-semibold">EFECTIVO QUE DEBE HABER EN EL CAJÓN</p>
               <p className="num text-4xl font-bold tracking-tight">{formatearPesos(caja.esperado)}</p>
               <p className="num text-sm">
-                Base {formatearPesos(caja.base)} + efectivo {formatearPesos(caja.por_metodo.efectivo)} − gastos de caja{" "}
+                Base {formatearPesos(caja.base)} + efectivo {formatearPesos(caja.por_metodo.efectivo)} − gastos de cajón{" "}
                 {formatearPesos(caja.gastos_caja ?? caja.gastos_total)}
               </p>
             </div>

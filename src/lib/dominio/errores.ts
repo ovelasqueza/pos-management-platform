@@ -25,7 +25,7 @@ const mensajes: Record<string, string> = {
   TOTAL_EXCEDIDO: "El total es demasiado alto",
   MONTO_INVALIDO: "Escribe un monto válido",
   DESCRIPCION_INVALIDA: "Escribe una descripción",
-  EFECTIVO_INSUFICIENTE: "No hay suficiente efectivo en caja",
+  EFECTIVO_INSUFICIENTE: "No hay suficiente efectivo en el cajón",
   GASTO_NO_ANULABLE: "Ese gasto ya no se puede anular",
   VENTA_NO_ANULABLE: "Esa venta no se puede anular",
   MOTIVO_INVALIDO: "Escribe el motivo (máx. 120)",

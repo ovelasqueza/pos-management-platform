@@ -100,7 +100,7 @@ function CerrarTurno({ turno, cerrar, alCerrar }: { turno: TurnoFila; cerrar: ()
           className="num"
         />
         <p className="flex justify-between text-sm text-texto-2">
-          <span>Queda en caja · QR y tarjeta pasan solos a caja mayor</span>
+          <span>Queda en cajón · QR y tarjeta pasan solos a caja mayor</span>
           <span className="num font-semibold text-texto">
             {contadoActual !== null && mayorActual !== null && envioValido(contadoActual, mayorActual)
               ? formatearPesos(quedaEnCaja(contadoActual, mayorActual))
