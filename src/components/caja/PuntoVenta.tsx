@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, CircleCheck, Lock, LogOut, Receipt, ShoppingCart, Vault, Wallet, X } from "lucide-react";
 import { crearClienteNavegador } from "@/lib/supabase/browser";
 import { cargarProductosVendibles } from "@/lib/caja/productos";
+import { abrirCajonSinPapel } from "@/lib/caja/cajon";
 import {
   conciliarCarrito,
   firmaCarrito,
@@ -217,6 +218,18 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
     return { ok: true, cambio: ticket.cambio };
   }
 
+  // ── Cajón: sin papel con el agente del equipo; si no está, con la impresión mínima ──
+  const abriendoCajon = useRef(false);
+  async function abrirCajon() {
+    if (abriendoCajon.current) return;
+    abriendoCajon.current = true;
+    try {
+      if (!(await abrirCajonSinPapel())) imprimir({ tipo: "cajon" });
+    } finally {
+      abriendoCajon.current = false;
+    }
+  }
+
   // ── Cierre ──
   function pedirCierre() {
     if (carrito.length > 0) {
@@ -322,7 +335,7 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
             <>
               <button
                 type="button"
-                onClick={() => imprimir({ tipo: "cajon" })}
+                onClick={abrirCajon}
                 className={botonCabecera}
                 aria-label="Abrir cajón"
               >
