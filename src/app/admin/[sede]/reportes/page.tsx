@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { resolverSede } from "@/lib/admin/sedes";
 import {
   intentar,
+  listarAnuladas,
   listarGastos,
   listarTurnos,
   listarVentas,
@@ -31,6 +32,7 @@ const VISTAS = [
   { valor: "ventas", nombre: "Ventas" },
   { valor: "productos", nombre: "Productos" },
   { valor: "gastos", nombre: "Gastos" },
+  { valor: "anuladas", nombre: "Anuladas" },
   { valor: "turnos", nombre: "Turnos" },
   { valor: "cuadre", nombre: "Cuadre" },
   { valor: "cajeros", nombre: "Cajeros" },
@@ -98,13 +100,16 @@ async function Ventas({ ctx }: { ctx: Contexto }) {
           </thead>
           <tbody>
             {filas.map((v) => (
-              <tr key={v.id} className="border-b border-suave last:border-0">
-                <td className={`${td} num font-semibold`}>{v.numero}</td>
+              <tr key={v.id} className={`border-b border-suave last:border-0 ${v.anulada_en ? "text-texto-3" : ""}`}>
+                <td className={`${td} num font-semibold ${v.anulada_en ? "line-through" : ""}`}>{v.numero}</td>
                 <td className={`${td} num text-sm`}>{formatearFechaHora(v.creado_en)}</td>
                 {ctx.todas && <td className={td}>{v.sede?.nombre}</td>}
                 <td className={`${td} hidden md:table-cell`}>{v.cajero?.nombre_completo}</td>
-                <td className={td}>{nombreMetodo(v.metodo)}</td>
-                <td className={`${td} num text-right font-semibold`}>{formatearPesos(v.total)}</td>
+                <td className={td}>
+                  {nombreMetodo(v.metodo)}
+                  {v.anulada_en && <span className="ml-2 rounded-control bg-peligro-suave px-2 py-0.5 text-xs text-peligro">Anulada</span>}
+                </td>
+                <td className={`${td} num text-right ${v.anulada_en ? "line-through" : "font-semibold"}`}>{formatearPesos(v.total)}</td>
                 <td className="px-1">
                   <DetalleVenta ventaId={v.id} numero={v.numero} />
                 </td>
@@ -162,6 +167,60 @@ async function Gastos({ ctx }: { ctx: Contexto }) {
         {filas.length === 0 && <p className="p-6 text-center text-texto-3">Sin gastos en el periodo</p>}
       </div>
       <Paginacion ctx={ctx} total={total} />
+    </>
+  );
+}
+
+/** Ventas que el cajero anuló, con su motivo. No cuentan en ningún total. */
+async function Anuladas({ ctx }: { ctx: Contexto }) {
+  const filas = await listarAnuladas(ctx.sedeId, ctx.rango);
+  if (filas === null) {
+    return <p className="text-sm text-advertencia">Para ver las ventas anuladas, ejecuta el script 18 (ver docs/bd/README.md).</p>;
+  }
+  const total = filas.reduce((s, f) => s + f.total, 0);
+  return (
+    <>
+      <p className="flex justify-between text-sm text-texto-3">
+        <span>{filas.length} ventas anuladas (por fecha de anulación)</span>
+        <span>
+          Total anulado: <strong className="num text-texto">{formatearPesos(total)}</strong>
+        </span>
+      </p>
+      <div className="overflow-x-auto rounded-tarjeta border border-borde bg-superficie">
+        <table className="w-full text-left">
+          <thead className="border-b border-borde text-sm text-texto-3">
+            <tr>
+              <th className={th}>#</th>
+              <th className={th}>Anulada</th>
+              <th className={`${th} hidden lg:table-cell`}>Vendida</th>
+              {ctx.todas && <th className={th}>Sede</th>}
+              <th className={th}>Cajero</th>
+              <th className={`${th} hidden md:table-cell`}>Método</th>
+              <th className={th}>Motivo</th>
+              <th className={`${th} text-right`}>Total</th>
+              <th className="w-12" />
+            </tr>
+          </thead>
+          <tbody>
+            {filas.map((f) => (
+              <tr key={f.ventaId} className="border-b border-suave align-top last:border-0">
+                <td className={`${td} num font-semibold`}>{f.numero}</td>
+                <td className={`${td} num text-sm whitespace-nowrap`}>{formatearFechaHora(f.anuladaEn)}</td>
+                <td className={`${td} num hidden text-sm whitespace-nowrap text-texto-3 lg:table-cell`}>{formatearFechaHora(f.creadoEn)}</td>
+                {ctx.todas && <td className={td}>{f.sede}</td>}
+                <td className={td}>{f.cajero}</td>
+                <td className={`${td} hidden md:table-cell`}>{nombreMetodo(f.metodo)}</td>
+                <td className={`${td} max-w-xs break-words`}>{f.motivo}</td>
+                <td className={`${td} num text-right font-semibold whitespace-nowrap`}>{formatearPesos(f.total)}</td>
+                <td className="px-1">
+                  <DetalleVenta ventaId={f.ventaId} numero={f.numero} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {filas.length === 0 && <p className="p-6 text-center text-texto-3">Sin ventas anuladas en el periodo</p>}
+      </div>
     </>
   );
 }
@@ -455,6 +514,7 @@ export default async function PaginaReportes({ params, searchParams }: PageProps
           <>
             {vista === "ventas" && <Ventas ctx={ctx} />}
             {vista === "gastos" && <Gastos ctx={ctx} />}
+            {vista === "anuladas" && <Anuladas ctx={ctx} />}
             {vista === "turnos" && <Turnos ctx={ctx} />}
             {vista === "productos" && <Productos ctx={ctx} />}
             {vista === "cuadre" && <Cuadre ctx={ctx} />}

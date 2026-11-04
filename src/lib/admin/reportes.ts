@@ -77,22 +77,61 @@ export type FilaVenta = {
   metodo: MetodoPago;
   sede: { nombre: string } | null;
   cajero: { nombre_completo: string } | null;
+  /** Script 18 */
+  anulada_en?: string | null;
+  motivo_anulacion?: string | null;
 };
 
 export async function listarVentas(sedeId: string | null, rango: Rango, pagina: number) {
   const supabase = await crearClienteServidor();
   const { inicio, fin } = limitesRango(rango);
-  let q = supabase
-    .from("ventas")
-    .select("id, numero, creado_en, total, metodo, sede:sedes(nombre), cajero:perfiles(nombre_completo)", { count: "exact" })
-    .gte("creado_en", inicio)
-    .lt("creado_en", fin)
-    .order("creado_en", { ascending: false })
-    .range(...desdeHasta(pagina));
-  if (sedeId) q = q.eq("sede_id", sedeId);
-  const { data, error, count } = await q.returns<FilaVenta[]>();
+  const consulta = (columnas: string) => {
+    let q = supabase
+      .from("ventas")
+      .select(`${columnas}, sede:sedes(nombre), cajero:perfiles(nombre_completo)`, { count: "exact" })
+      .gte("creado_en", inicio)
+      .lt("creado_en", fin)
+      .order("creado_en", { ascending: false })
+      .range(...desdeHasta(pagina));
+    if (sedeId) q = q.eq("sede_id", sedeId);
+    return q.returns<FilaVenta[]>();
+  };
+  let { data, error, count } = await consulta("id, numero, creado_en, total, metodo, anulada_en, motivo_anulacion");
+  // Respaldo mientras no se ejecute el script 18
+  if (error?.code === "42703") ({ data, error, count } = await consulta("id, numero, creado_en, total, metodo"));
   if (error) fallar("las ventas", error);
-  return { filas: data, total: count ?? 0 };
+  return { filas: data ?? [], total: count ?? 0 };
+}
+
+export type FilaAnulada = {
+  ventaId: string;
+  numero: number;
+  creadoEn: string;
+  anuladaEn: string;
+  sede: string;
+  cajero: string;
+  metodo: MetodoPago;
+  total: number;
+  motivo: string;
+};
+
+/** Ventas anuladas con hora de anulación en el rango. null si falta el script 18. */
+export async function listarAnuladas(sedeId: string | null, rango: Rango): Promise<FilaAnulada[] | null> {
+  const supabase = await crearClienteServidor();
+  const { data, error } = await supabase.rpc("rep_ventas_anuladas", args(sedeId, rango));
+  if (error?.code === "PGRST202" || error?.code === "42883") return null;
+  if (error) fallar("las ventas anuladas", error);
+  return (data as Record<string, string | number>[]).map((f) => ({
+    ventaId: String(f.venta_id),
+    numero: Number(f.numero),
+    creadoEn: String(f.creado_en),
+    anuladaEn: String(f.anulada_en),
+    sede: String(f.sede),
+    cajero: String(f.cajero),
+    metodo: f.metodo as MetodoPago,
+    total: Number(f.total),
+    motivo: String(f.motivo),
+  }));
 }
 
 export type FilaGasto = {

@@ -26,7 +26,18 @@ type CajaTurno = {
   gastos_caja?: number;
   gastos_mayor?: number;
   esperado: number;
-  ultimas_ventas: { id: string; numero: number; creado_en: string; total: number; metodo: MetodoPago }[];
+  /** Script 18 */
+  anuladas_cantidad?: number;
+  anuladas_total?: number;
+  ultimas_ventas: {
+    id: string;
+    numero: number;
+    creado_en: string;
+    total: number;
+    metodo: MetodoPago;
+    anulada?: boolean;
+    motivo?: string | null;
+  }[];
   gastos: {
     descripcion: string;
     monto: number;
@@ -95,16 +106,29 @@ export function VerCaja({ turnoId, cerrar }: { turnoId: string; cerrar: () => vo
               <Dato titulo="Tarjeta" valor={caja.por_metodo.tarjeta} icono={<CreditCard size={16} aria-hidden />} />
             </dl>
 
+            {(caja.anuladas_cantidad ?? 0) > 0 && (
+              <p className="text-sm font-semibold text-peligro">
+                {caja.anuladas_cantidad} {caja.anuladas_cantidad === 1 ? "venta anulada" : "ventas anuladas"} ·{" "}
+                <span className="num">{formatearPesos(caja.anuladas_total ?? 0)}</span> (no cuentan)
+              </p>
+            )}
+
             {caja.ultimas_ventas.length > 0 && (
               <div>
                 <h3 className="mb-1 text-sm font-semibold text-texto-3">Últimas ventas</h3>
                 <ul className="max-h-48 overflow-y-auto rounded-tarjeta border border-borde text-sm">
                   {caja.ultimas_ventas.map((v) => (
-                    <li key={v.id} className="flex items-center gap-3 border-b border-suave px-3 py-2 last:border-0">
-                      <span className="num w-10 font-semibold">#{v.numero}</span>
+                    <li
+                      key={v.id}
+                      className={`flex items-center gap-3 border-b border-suave px-3 py-2 last:border-0 ${v.anulada ? "text-texto-3" : ""}`}
+                    >
+                      <span className={`num w-10 font-semibold ${v.anulada ? "line-through" : ""}`}>#{v.numero}</span>
                       <span className="num text-texto-3">{formatearHora(v.creado_en)}</span>
-                      <span className="mr-auto text-texto-2">{nombreMetodo(v.metodo)}</span>
-                      <span className="num font-semibold">{formatearPesos(v.total)}</span>
+                      <span className="mr-auto min-w-0 text-texto-2">
+                        {nombreMetodo(v.metodo)}
+                        {v.anulada && <span className="block truncate text-xs text-peligro">Anulada · {v.motivo}</span>}
+                      </span>
+                      <span className={`num font-semibold ${v.anulada ? "line-through" : ""}`}>{formatearPesos(v.total)}</span>
                     </li>
                   ))}
                 </ul>

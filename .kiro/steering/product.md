@@ -67,7 +67,8 @@ POS web para una empresa con varias sedes de dos tipos: **Panadería** y **Asade
 - El total lo calcula la base de datos con sus precios. Si un precio cambió mientras el carrito estaba abierto, la venta se rechaza y el carrito se ajusta al precio nuevo.
 - Cada cobro lleva una clave única: si se reintenta por fallas de red no se duplica la venta.
 - Número de venta consecutivo por sede.
-- Las ventas no se modifican, no se anulan ni se borran. Guardan copia del nombre y del precio del momento.
+- Las ventas no se modifican ni se borran. Guardan copia del nombre y del precio del momento.
+- **Anular venta**: solo el cajero, con su turno abierto y desde el equipo del turno, con motivo obligatorio (máx. 120). Se anula la venta completa. Queda registrada (tachada, con hora y motivo) y no cuenta en el esperado, en lo que pasa a caja mayor, en el reporte de turno ni en los reportes de ventas. No se permite si deja el efectivo esperado en negativo. Al anular se imprime el ticket con la marca **ANULADA** sobrepuesta y el motivo abajo. Con el turno cerrado es imposible anular. El admin las ve en Reportes → Anuladas.
 
 ### Gastos
 
@@ -94,7 +95,7 @@ POS web para una empresa con varias sedes de dos tipos: **Panadería** y **Asade
 ### Reportes (solo admin)
 
 - Por sede o "Todas". Rango de fechas máximo de 1 año.
-- Resumen, ventas, gastos, turnos, ventas por producto, cuadre diario, diferencias por cajero y ventas por hora.
+- Resumen, ventas, gastos, ventas anuladas, turnos, ventas por producto, cuadre diario, diferencias por cajero y ventas por hora.
 
 ### Inventario por fecha (pendiente, spec 05)
 
@@ -110,7 +111,7 @@ POS web para una empresa con varias sedes de dos tipos: **Panadería** y **Asade
 
 ## Fuera de alcance v1
 
-Facturación electrónica DIAN, offline, recetas (descontar materias primas al vender), descuentos, pagos combinados, anulación de ventas y devoluciones, venta por peso, integración con datáfonos o pasarelas, exportar reportes de ventas a Excel/PDF (solo el inventario se descarga, en CSV), PDF del inventario, envío por correo/WhatsApp, impuestos desglosados, mesas/comandas.
+Facturación electrónica DIAN, offline, recetas (descontar materias primas al vender), descuentos, pagos combinados, devoluciones, anular una sola línea de una venta, venta por peso, integración con datáfonos o pasarelas, exportar reportes de ventas a Excel/PDF (solo el inventario se descarga, en CSV), PDF del inventario, envío por correo/WhatsApp, impuestos desglosados, mesas/comandas.
 
 ## Principio rector
 

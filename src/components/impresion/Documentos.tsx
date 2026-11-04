@@ -52,9 +52,21 @@ function Encabezado({ sede, copia, regimen }: { sede: DatosTicket["sede"]; copia
 const papel = "w-[72mm] p-[2mm] font-mono text-[12px] leading-normal text-black";
 
 export function Ticket({ datos, copia }: { datos: DatosTicket; copia: boolean }) {
+  const anulada = Boolean(datos.anulada_en);
   return (
-    <div className={papel}>
+    <div className={`${papel} relative overflow-hidden`}>
+      {/* Venta anulada: marca grande sobrepuesta (letras huecas para que el contenido se siga leyendo) */}
+      {anulada && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden>
+          <span className="-rotate-[35deg] font-sans text-[64px] font-black tracking-wider text-transparent [-webkit-text-stroke:2px_black]">
+            ANULADA
+          </span>
+        </div>
+      )}
       <Encabezado sede={datos.sede} copia={copia} regimen />
+      {anulada && (
+        <p className="mt-2 bg-black py-1 text-center text-[20px] font-black tracking-widest text-white">VENTA ANULADA</p>
+      )}
       <Linea />
       <Seccion>
         <Fila izq={<strong>Venta #{datos.numero}</strong>} der={formatearFechaHora(datos.fecha)} />
@@ -92,7 +104,15 @@ export function Ticket({ datos, copia }: { datos: DatosTicket; copia: boolean })
         </Seccion>
       </div>
       <Linea />
-      <p className="py-1 text-center">¡Gracias por su compra!</p>
+      {anulada ? (
+        <div className="border-2 border-black px-1.5 py-1">
+          <p className="font-bold">ANULADA · {formatearFechaHora(datos.anulada_en!)}</p>
+          <p className="mt-0.5 font-bold">Motivo de anulación:</p>
+          <p className="break-words">{datos.motivo_anulacion}</p>
+        </div>
+      ) : (
+        <p className="py-1 text-center">¡Gracias por su compra!</p>
+      )}
     </div>
   );
 }
@@ -124,6 +144,24 @@ export function ReporteTurno({ datos, copia }: { datos: DatosReporte; copia: boo
         <Destacado izq="Total vendido" der={formatearPesos(datos.ventas_total)} />
       </Seccion>
       <Linea />
+
+      {/* Desde el script 18. No suman en Ventas ni en el arqueo */}
+      {datos.anuladas && datos.anuladas.length > 0 && (
+        <>
+          <Seccion titulo={`Ventas anuladas (${datos.anuladas.length})`}>
+            <div className="flex flex-col gap-1.5">
+              {datos.anuladas.map((a) => (
+                <div key={a.numero}>
+                  <Fila izq={`#${a.numero}  ${formatearHora(a.hora)}  ${nombreMetodo(a.metodo)}`} der={formatearPesos(a.total)} />
+                  <p className="pl-3 text-[11px] break-words">↳ {a.motivo}</p>
+                </div>
+              ))}
+            </div>
+            <Destacado izq="Total anulado" der={formatearPesos(datos.anuladas_total ?? 0)} />
+          </Seccion>
+          <Linea />
+        </>
+      )}
 
       <Seccion titulo="Gastos">
         {datos.gastos.length === 0 && <p>Sin gastos</p>}

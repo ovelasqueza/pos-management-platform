@@ -23,6 +23,7 @@ Después de ejecutar cada uno, marca la casilla y anota la fecha en la tabla.
 | 15 | `supabase/migrations/20261101100000_caja_mayor.sql` | **Caja mayor (spec 06).** Tablas `caja_mayor_saldos` (por sede: Efectivo, QR, Tarjeta; nunca negativo) y `caja_mayor_movimientos` (inmutable). Columnas `gastos.monto_mayor`, `gastos.parte_mayor`, `gastos.monto_caja` (calculada) y `turnos.efectivo_a_mayor`. El esperado ahora resta solo lo que salió de la caja. Nuevas versiones de `registrar_gasto` (origen), `anular_gasto` (devuelve a caja mayor), `cerrar_turno` (efectivo a caja mayor; QR y tarjeta pasan solos), `rep_caja_turno` y `rep_cuadre_diario`. RPC nuevas: `caja_mayor_saldo`, `base_sugerida`, `caja_mayor_ajustar`, `caja_mayor_fijar`. Gastos y turnos anteriores quedan como caja; la caja mayor arranca en $ 0. **Publicar la app el mismo día** (la versión anterior sigue funcionando, pero sin caja mayor en gastos ni envío de efectivo) | [x] verificado 2026-11-01 (2 tablas, 4 RPC; saldos = suma de movimientos) |
 | 16 | `supabase/migrations/20261101110000_gastos_varias_partes.sql` | **Requiere el 15.** Un gasto de caja mayor puede salir de varias partes a la vez: columnas `gastos.mayor_efectivo`, `mayor_transferencia` y `mayor_tarjeta` (reemplazan `parte_mayor`; los gastos existentes conservan su parte). Nueva `registrar_gasto(p_monto, p_descripcion, p_mayor_efectivo, p_mayor_transferencia, p_mayor_tarjeta)`; la de 4 argumentos sigue funcionando para la app anterior. `anular_gasto` devuelve cada parte. El error de saldo dice qué parte no alcanza. Reporte de turno y "Ver caja" traen las partes de cada gasto | [x] verificado 2026-11-01 (columnas `mayor_*` existen, `parte_mayor` eliminada, 10 gastos coherentes) |
 | 17 | `supabase/migrations/20261101120000_reporte_nit.sql` | **Requiere el 12 y el 16.** El reporte de turno guarda el NIT de la sede y lo imprime en la cabecera. Solo cambia `privado.armar_reporte`; aplica a los turnos que se cierren después | [x] verificado 2026-11-01 (cierre de las 2:40 p. m. imprime el NIT) |
+| 18 | `supabase/migrations/20261103100000_anular_ventas.sql` | **Requiere el 17. Anulación de ventas.** Columnas `ventas.anulada_en` y `ventas.motivo_anulacion`. El trigger `ventas_inmutables` ahora solo deja anular (una vez, turno abierto); las líneas siguen inmutables. RPC nuevas: `anular_venta(p_venta, p_motivo)` (solo el cajero de la venta, turno abierto, mismo equipo, motivo obligatorio; no deja el esperado en negativo) y `rep_ventas_anuladas` (admin). Mismas firmas, sin anuladas en los totales: `efectivo_esperado`, `cerrar_turno` (QR y tarjeta a caja mayor), `armar_reporte` (agrega la lista `anuladas`), `ticket` (agrega `anulada_en` y `motivo_anulacion`), `rep_caja_turno`, `rep_cuadre_diario`, `rep_resumen`, `rep_ventas_por_dia`, `rep_productos`, `rep_ventas_por_hora`, `rep_vendido_entre`, `rep_productos_hora_pico`, `rep_top_por_hora`. Los turnos ya cerrados no cambian. **Orden: `npm run respaldo-bd`, ejecutar el script y luego publicar la app** (la app anterior sigue funcionando con el script, sin el botón de anular) | [ ] |
 
 
 
@@ -35,6 +36,14 @@ Confirmar el 17 en el SQL Editor (solo lectura; debe dar `true`):
 
 ```sql
 select pg_get_functiondef('privado.armar_reporte(uuid,int,int,public.perfiles,int)'::regprocedure) like '%''nit''%';
+```
+
+Confirmar el 18 (solo lectura; debe dar `2` y `true`):
+
+```sql
+select count(*) from information_schema.columns
+where table_schema = 'public' and table_name = 'ventas' and column_name in ('anulada_en', 'motivo_anulacion');
+select to_regprocedure('public.anular_venta(uuid,text)') is not null;
 ```
 
 > `NEXT_PUBLIC_SUPABASE_URL` debe ser solo `https://<proyecto>.supabase.co`, sin `/rest/v1/`.

@@ -27,6 +27,8 @@ const mensajes: Record<string, string> = {
   DESCRIPCION_INVALIDA: "Escribe una descripción",
   EFECTIVO_INSUFICIENTE: "No hay suficiente efectivo en caja",
   GASTO_NO_ANULABLE: "Ese gasto ya no se puede anular",
+  VENTA_NO_ANULABLE: "Esa venta no se puede anular",
+  MOTIVO_INVALIDO: "Escribe el motivo (máx. 120)",
   CONTADO_INVALIDO: "Escribe el efectivo contado",
   REGISTRO_INMUTABLE: "Este registro no se puede modificar",
   FECHA_FUTURA: "La fecha no puede ser futura",

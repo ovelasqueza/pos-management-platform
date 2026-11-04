@@ -17,6 +17,9 @@ export type DatosTicket = {
   cambio: number | null;
   /** Ventas antes del script 09 no lo traen: se asume Consumidor Final */
   cliente?: { tipo: string; documento: string; nombre: string };
+  /** Desde el script 18: hora y motivo si la venta se anuló */
+  anulada_en?: string | null;
+  motivo_anulacion?: string | null;
   lineas: { nombre: string; cantidad: number; precio: number; subtotal: number }[];
 };
 
@@ -31,6 +34,9 @@ export type DatosReporte = {
   ventas_cantidad: number;
   ventas_total: number;
   por_metodo: Record<MetodoPago, number>;
+  /** Desde el script 18: ventas anuladas del turno (no cuentan en los totales) */
+  anuladas?: { numero: number; hora: string; anulada_en: string; metodo: MetodoPago; total: number; motivo: string }[];
+  anuladas_total?: number;
   gastos: {
     descripcion: string;
     monto: number;
