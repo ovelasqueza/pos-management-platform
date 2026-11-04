@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CircleCheck, Lock, LogOut, Receipt, ShoppingCart, Wallet, X } from "lucide-react";
+import { ArrowLeft, CircleCheck, Lock, LogOut, Receipt, ShoppingCart, Vault, Wallet, X } from "lucide-react";
 import { crearClienteNavegador } from "@/lib/supabase/browser";
 import { cargarProductosVendibles } from "@/lib/caja/productos";
 import {
@@ -320,6 +320,15 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
           {/* Al cobrar no se puede cerrar ni salir a la mitad */}
           {!enCobro && (
             <>
+              <button
+                type="button"
+                onClick={() => imprimir({ tipo: "cajon", sede, cajero, fecha: new Date().toISOString() })}
+                className={botonCabecera}
+                aria-label="Abrir cajón"
+              >
+                <Vault size={20} aria-hidden />
+                <span className="hidden lg:inline">Cajón</span>
+              </button>
               <button type="button" onClick={pedirCierre} className={botonCabecera}>
                 <Lock size={20} aria-hidden />
                 <span className="hidden lg:inline">Cerrar turno</span>

@@ -2,7 +2,7 @@
 
 import { createContext, use, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ReporteTurno, Ticket } from "./Documentos";
+import { AperturaCajon, ReporteTurno, Ticket } from "./Documentos";
 import type { Documento } from "@/lib/dominio/documentos";
 
 type Imprimir = (doc: Documento) => void;
@@ -50,8 +50,10 @@ export function ProveedorImpresion({ children }: { children: ReactNode }) {
           <div className="zona-impresion hidden print:block" aria-hidden>
             {trabajo.doc.tipo === "ticket" ? (
               <Ticket datos={trabajo.doc.datos} copia={trabajo.doc.copia} />
-            ) : (
+            ) : trabajo.doc.tipo === "reporte" ? (
               <ReporteTurno datos={trabajo.doc.datos} copia={trabajo.doc.copia} />
+            ) : (
+              <AperturaCajon sede={trabajo.doc.sede} cajero={trabajo.doc.cajero} fecha={trabajo.doc.fecha} />
             )}
           </div>,
           document.body,
