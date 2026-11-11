@@ -2,7 +2,20 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CircleCheck, CloudUpload, Lock, LogOut, Printer, Receipt, ShoppingCart, Vault, Wallet, X } from "lucide-react";
+import {
+  ArrowLeft,
+  CircleCheck,
+  CloudUpload,
+  Lock,
+  LogOut,
+  Printer,
+  Receipt,
+  RefreshCw,
+  ShoppingCart,
+  Vault,
+  Wallet,
+  X,
+} from "lucide-react";
 import { crearClienteNavegador } from "@/lib/supabase/browser";
 import { cargarProductosVendibles } from "@/lib/caja/productos";
 import { BOTON_CAJON_ACTIVO, abrirCajonSinPapel } from "@/lib/caja/cajon";
@@ -173,6 +186,46 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
     if (r.conPrecioNuevo.length) partes.push(`Precio nuevo: ${r.conPrecioNuevo.join(", ")}`);
     return partes.join(". ");
   }, [supabase]);
+
+  const [actualizandoCatalogo, setActualizandoCatalogo] = useState(false);
+  const actualizarEnVivo = useCallback(async () => {
+    if (cerrado.current) return;
+    setActualizandoCatalogo(true);
+    try {
+      const [cambios, turno] = await Promise.all([
+        sincronizar(),
+        supabase.from("turnos").select("cerrado_en").eq("id", turnoId).maybeSingle(),
+      ]);
+      if (turno.data?.cerrado_en) {
+        turnoCerradoPorOtro();
+        return;
+      }
+      if (cambios) setAviso({ texto: cambios, tipo: "advertencia" });
+      router.refresh();
+    } catch {
+      // ignorar si no hay red en este instante
+    } finally {
+      setActualizandoCatalogo(false);
+    }
+  }, [router, sincronizar, supabase, turnoCerradoPorOtro, turnoId]);
+
+  // Escucha avisos instantáneos cuando el administrador guarda cambios (productos, precios, papel 80/58 mm o cierre)
+  useEffect(() => {
+    const canal = supabase
+      .channel("pos-sync")
+      .on("broadcast", { event: "actualizar" }, ({ payload }) => {
+        if (cerrado.current) return;
+        if (payload?.tipo === "recargar") {
+          window.location.reload();
+          return;
+        }
+        void actualizarEnVivo();
+      })
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(canal);
+    };
+  }, [actualizarEnVivo, supabase]);
 
   /**
    * Cambios del carrito hechos por el cajero. Si lo deja vacío, abandonó ese cobro:
@@ -622,6 +675,17 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
           {/* Al cobrar no se puede cerrar ni salir a la mitad */}
           {!enCobro && (
             <>
+              <button
+                type="button"
+                onClick={() => void actualizarEnVivo()}
+                disabled={actualizandoCatalogo}
+                className={botonCabecera}
+                aria-label="Actualizar catálogo y configuración"
+                title="Actualizar precios, productos y configuración de sede"
+              >
+                <RefreshCw size={20} className={actualizandoCatalogo ? "animate-spin" : ""} aria-hidden />
+                <span className="hidden xl:inline">{actualizandoCatalogo ? "Actualizando…" : "Actualizar"}</span>
+              </button>
               {BOTON_CAJON_ACTIVO && (
                 <button
                   type="button"

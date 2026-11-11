@@ -11,6 +11,7 @@ import {
 } from "@/lib/dominio/producto";
 import { mensajeDeError } from "@/lib/dominio/errores";
 import { erroresPorCampo, exito, type EstadoFormulario } from "@/lib/formularios";
+import { notificarCajasAbiertas } from "@/lib/sincronizacion";
 import type { TipoSede } from "@/lib/dominio/sede";
 
 const texto = (f: FormData, k: string) => String(f.get(k) ?? "");
@@ -35,7 +36,10 @@ function errorProducto(error: { code?: string; message?: string }): EstadoFormul
   return { error: mensajeDeError(error) };
 }
 
-const refrescar = () => revalidatePath("/admin", "layout");
+const refrescar = () => {
+  revalidatePath("/admin", "layout");
+  void notificarCajasAbiertas("catalogo");
+};
 
 // ───────────────────────── Productos ─────────────────────────
 

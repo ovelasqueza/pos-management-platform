@@ -7,6 +7,7 @@ import { esquemaCrearSede, esquemaEditarSede } from "@/lib/dominio/sede";
 import { normalizarAnchoPapel } from "@/lib/impresion/papel";
 import { mensajeDeError } from "@/lib/dominio/errores";
 import { erroresPorCampo, exito, type EstadoFormulario } from "@/lib/formularios";
+import { notificarCajasAbiertas } from "@/lib/sincronizacion";
 
 const texto = (f: FormData, k: string) => String(f.get(k) ?? "");
 
@@ -41,6 +42,7 @@ export async function crearSede(_: EstadoFormulario, f: FormData): Promise<Estad
   if (error) return errorNombre(error);
 
   revalidatePath("/admin", "layout");
+  void notificarCajasAbiertas("catalogo");
   return exito();
 }
 
@@ -68,6 +70,7 @@ export async function editarSede(_: EstadoFormulario, f: FormData): Promise<Esta
   if (error) return errorNombre(error);
 
   revalidatePath("/admin", "layout");
+  void notificarCajasAbiertas("catalogo");
   return exito();
 }
 
@@ -83,6 +86,7 @@ export async function cambiarAnchoPapelSede(id: string, ancho: number): Promise<
   }
 
   revalidatePath("/admin", "layout");
+  void notificarCajasAbiertas("catalogo");
   return exito();
 }
 
@@ -93,5 +97,6 @@ export async function cambiarEstadoSede(id: string, activa: boolean): Promise<Es
   if (error) return { error: mensajeDeError(error) };
 
   revalidatePath("/admin", "layout");
+  void notificarCajasAbiertas("catalogo");
   return exito();
 }
