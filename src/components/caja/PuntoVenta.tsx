@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   CircleCheck,
   CloudUpload,
+  Headphones,
   Lock,
   LogOut,
   Printer,
@@ -636,6 +637,16 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
                 </span>
               </button>
             )}
+            <a
+              href="https://wa.me/573108844273?text=Hola,%20necesito%20soporte%20en%20el%20punto%20de%20venta."
+              target="_blank"
+              rel="noopener noreferrer"
+              className={botonDestacado}
+              title="Contactar soporte por WhatsApp (+57 310 8844273)"
+            >
+              <Headphones size={22} aria-hidden />
+              <span>Soporte</span>
+            </a>
             <button type="button" onClick={() => setVentana("ventas")} className={botonDestacado}>
               <Receipt size={22} aria-hidden />
               Ventas
