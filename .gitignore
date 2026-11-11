@@ -33,6 +33,7 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example
+!.env.production
 
 # respaldos de la base de datos (datos reales: no subir a git)
 /respaldos/
