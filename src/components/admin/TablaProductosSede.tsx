@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { RotateCw, Search, Tag } from "lucide-react";
 import { crearClienteNavegador } from "@/lib/supabase/browser";
 import { formatearPesos, leerPesos } from "@/lib/dominio/dinero";
@@ -36,12 +36,19 @@ function Vende({ fila, guardar }: { fila: FilaProductoSede; guardar: (v: boolean
   const [fallo, setFallo] = useState(false);
   const [guardando, setGuardando] = useState(false);
 
+  useEffect(() => {
+    setActivo(fila.habilitado);
+  }, [fila.habilitado]);
+
   async function enviar(v: boolean) {
     setActivo(v); // conserva el estado tocado aunque falle
     setGuardando(true);
     const ok = await guardar(v).catch(() => false);
     setGuardando(false);
     setFallo(!ok);
+    if (!ok) {
+      setActivo(fila.habilitado);
+    }
   }
 
   return (
@@ -71,19 +78,42 @@ type Props = {
 
 /** Productos de una sede: datos del producto + vende + precio de venta + costo, todo en una tabla. */
 export function TablaProductosSede({ sedeId, tipo, filas, categorias }: Props) {
+  const [pestana, setPestana] = useState<"activos" | "desactivados">("activos");
+  const [filasLocales, setFilasLocales] = useState(filas);
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState(TODAS);
   const supabase = useMemo(() => crearClienteNavegador(), []);
-  const haySinCategoria = useMemo(() => filas.some((f) => f.categoriaId === null), [filas]);
+
+  useEffect(() => {
+    setFilasLocales(filas);
+  }, [filas]);
+
+  const haySinCategoria = useMemo(() => filasLocales.some((f) => f.categoriaId === null), [filasLocales]);
+
+  const conteoActivos = useMemo(
+    () => filasLocales.filter((f) => f.habilitado && f.activo).length,
+    [filasLocales]
+  );
+  const conteoDesactivados = useMemo(
+    () => filasLocales.filter((f) => !f.habilitado || !f.activo).length,
+    [filasLocales]
+  );
 
   const visibles = useMemo(() => {
     const q = normalizarTexto(busqueda);
-    return filas.filter(
-      (f) =>
-        (categoria === TODAS || (categoria === SIN_CATEGORIA ? f.categoriaId === null : f.categoriaId === categoria)) &&
-        (!q || normalizarTexto(f.nombre).includes(q)),
-    );
-  }, [busqueda, categoria, filas]);
+    return filasLocales.filter((f) => {
+      const estaActivo = f.habilitado && f.activo;
+      const coincideEstado = pestana === "activos" ? estaActivo : !estaActivo;
+      if (!coincideEstado) return false;
+
+      const coincideCategoria =
+        categoria === TODAS || (categoria === SIN_CATEGORIA ? f.categoriaId === null : f.categoriaId === categoria);
+      if (!coincideCategoria) return false;
+
+      if (q && !normalizarTexto(f.nombre).includes(q)) return false;
+      return true;
+    });
+  }, [busqueda, categoria, filasLocales, pestana]);
 
   // Cada guardado verifica que la fila cambió (si la RLS lo bloquea, no hay filas).
   const actualizar = async (productoId: string, cambios: { precio_venta?: number; habilitado?: boolean }) => {
@@ -93,18 +123,83 @@ export function TablaProductosSede({ sedeId, tipo, filas, categorias }: Props) {
       .eq("sede_id", sedeId)
       .eq("producto_id", productoId)
       .select("producto_id");
-    return !error && data.length === 1;
+    const ok = !error && data.length === 1;
+    if (ok) {
+      setFilasLocales((prev) =>
+        prev.map((f) => {
+          if (f.productoId !== productoId) return f;
+          return {
+            ...f,
+            ...(cambios.habilitado !== undefined ? { habilitado: cambios.habilitado } : {}),
+            ...(cambios.precio_venta !== undefined ? { precioVenta: cambios.precio_venta } : {}),
+          };
+        })
+      );
+    }
+    return ok;
   };
 
   const guardarCosto = (productoId: string) => async (costo: number) => {
     const { error } = await supabase
       .from("costos_producto_sede")
       .upsert({ sede_id: sedeId, producto_id: productoId, costo }, { onConflict: "sede_id,producto_id" });
-    return !error;
+    const ok = !error;
+    if (ok) {
+      setFilasLocales((prev) =>
+        prev.map((f) => (f.productoId === productoId ? { ...f, costo } : f))
+      );
+    }
+    return ok;
   };
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Pestañas para separar productos activos de desactivados */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-1 rounded-tarjeta bg-suave p-1" role="tablist" aria-label="Filtro por estado de productos">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={pestana === "activos"}
+            onClick={() => setPestana("activos")}
+            className={`flex min-h-11 items-center gap-2 rounded-control px-4 text-sm font-semibold transition-colors ${
+              pestana === "activos"
+                ? "border border-borde bg-superficie text-texto shadow-sm"
+                : "text-texto-3 hover:text-texto"
+            }`}
+          >
+            <span>Activos</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                pestana === "activos" ? "bg-primario text-white" : "bg-borde text-texto-2"
+              }`}
+            >
+              {conteoActivos}
+            </span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={pestana === "desactivados"}
+            onClick={() => setPestana("desactivados")}
+            className={`flex min-h-11 items-center gap-2 rounded-control px-4 text-sm font-semibold transition-colors ${
+              pestana === "desactivados"
+                ? "border border-borde bg-superficie text-texto shadow-sm"
+                : "text-texto-3 hover:text-texto"
+            }`}
+          >
+            <span>Desactivados</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                pestana === "desactivados" ? "bg-peligro text-white" : "bg-borde text-texto-2"
+              }`}
+            >
+              {conteoDesactivados}
+            </span>
+          </button>
+        </div>
+      </div>
+
       <div className="flex flex-wrap gap-2">
         <label className="relative w-full max-w-sm">
           <span className="sr-only">Buscar producto</span>
@@ -205,7 +300,13 @@ export function TablaProductosSede({ sedeId, tipo, filas, categorias }: Props) {
           </tbody>
         </table>
         {visibles.length === 0 && (
-          <p className="p-6 text-center text-texto-3">{filas.length ? "Sin resultados" : "Aún no hay productos. Crea el primero"}</p>
+          <p className="p-6 text-center text-texto-3">
+            {busqueda || categoria !== TODAS
+              ? "Sin resultados para los filtros aplicados"
+              : pestana === "activos"
+                ? "No hay productos activos en esta sede"
+                : "No hay productos desactivados"}
+          </p>
         )}
       </div>
     </div>
