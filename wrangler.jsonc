@@ -19,7 +19,11 @@
   ],
   "observability": {
     "enabled": true
+  },
+  "vars": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://gbeoczslzjwgnambaoim.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_SF9Y2SVYT3d5DmFHprGRSw_W7BZ1ysZ"
   }
-  // Variables NO secretas: NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY van en .env.production
-  // (se incrustan al compilar). SUPABASE_SECRET_KEY va como secreto: ver docs/despliegue.md.
+  // SUPABASE_SECRET_KEY NUNCA va aquí porque este archivo va a git.
+  // Se configura en el panel de Cloudflare como Secret (cifrado).
 }
