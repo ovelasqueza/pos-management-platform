@@ -24,7 +24,7 @@ export default async function LayoutAdmin({ children, params }: LayoutProps<"/ad
           />
           <div className="flex min-w-0 items-center justify-end gap-3">
             <div className="hidden sm:block">
-              <SelectorPapel variante="claro" />
+              <SelectorPapel variante="claro" sedeId={sede?.id} anchoSede={sede?.ancho_papel} />
             </div>
             <p className="hidden truncate text-sm text-texto-3 lg:block">{perfil.nombreCompleto}</p>
             <BotonSalir compacto />

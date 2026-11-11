@@ -1,5 +1,3 @@
-"use client";
-
 import { useSyncExternalStore } from "react";
 
 /** Anchos de papel soportados por la impresora térmica. */

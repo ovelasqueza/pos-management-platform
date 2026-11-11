@@ -23,12 +23,18 @@ const nit = z
   .refine((v) => v === "" || /^[0-9]{3,15}(-[0-9])?$/.test(v), "Solo números (ej.: 900123456-7)")
   .transform((v) => (v === "" ? null : v));
 
+const anchoPapel = z
+  .union([z.literal(80), z.literal(58), z.literal("80"), z.literal("58")])
+  .optional()
+  .transform((v): 80 | 58 => (String(v) === "58" ? 58 : 80));
+
 const camposEditables = {
   nombre: z.string().trim().min(1, "Escribe el nombre").max(80, "Máximo 80 caracteres"),
   nit,
   ciudad: opcional(60),
   direccion: opcional(150),
   telefono: opcional(30),
+  ancho_papel: anchoPapel,
 };
 
 /** "Palmira · Barrio La Rivera" (solo lo que exista); null si no hay ninguno. */

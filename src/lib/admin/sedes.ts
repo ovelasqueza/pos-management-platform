@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { ordenarSedes, type TipoSede } from "@/lib/dominio/sede";
+import { normalizarAnchoPapel, type AnchoPapel } from "@/lib/impresion/papel";
 
 export type Sede = {
   id: string;
@@ -11,6 +12,7 @@ export type Sede = {
   ciudad: string | null;
   direccion: string | null;
   telefono: string | null;
+  ancho_papel: AnchoPapel;
   activa: boolean;
 };
 
@@ -19,13 +21,24 @@ export const TODAS = "todas";
 /** Todas las sedes en el orden del selector (activas primero, alfabético). */
 export const listarSedes = cache(async (): Promise<Sede[]> => {
   const supabase = await crearClienteServidor();
-  let { data, error } = await supabase.from("sedes").select("id, nombre, nit, tipo, ciudad, direccion, telefono, activa");
-  // Respaldo mientras no se ejecute la migración 12 (columna nit)
-  if (error?.code === "42703") {
+  let { data, error } = await supabase
+    .from("sedes")
+    .select("id, nombre, nit, tipo, ciudad, direccion, telefono, ancho_papel, activa");
+  // Respaldo mientras no se ejecute la migración de ancho_papel o nit
+  if (error?.code === "42703" || error?.code === "PGRST204") {
+    ({ data, error } = await supabase.from("sedes").select("id, nombre, nit, tipo, ciudad, direccion, telefono, activa"));
+  }
+  if (error?.code === "42703" || error?.code === "PGRST204") {
     ({ data, error } = await supabase.from("sedes").select("id, nombre, tipo, ciudad, direccion, telefono, activa"));
   }
   if (error) throw new Error(`No se pudieron cargar las sedes: ${error.message}`);
-  return ordenarSedes((data as Omit<Sede, "nit">[] as Sede[]).map((s) => ({ ...s, nit: s.nit ?? null })));
+  return ordenarSedes(
+    (data as Partial<Sede>[] as Sede[]).map((s) => ({
+      ...s,
+      nit: s.nit ?? null,
+      ancho_papel: normalizarAnchoPapel(s.ancho_papel),
+    })),
+  );
 });
 
 /**

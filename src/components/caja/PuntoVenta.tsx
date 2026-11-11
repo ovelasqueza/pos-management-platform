@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CircleCheck, CloudUpload, Lock, LogOut, Receipt, ShoppingCart, Vault, Wallet, X } from "lucide-react";
+import { ArrowLeft, CircleCheck, CloudUpload, Lock, LogOut, Printer, Receipt, ShoppingCart, Vault, Wallet, X } from "lucide-react";
 import { crearClienteNavegador } from "@/lib/supabase/browser";
 import { cargarProductosVendibles } from "@/lib/caja/productos";
 import { BOTON_CAJON_ACTIVO, abrirCajonSinPapel } from "@/lib/caja/cajon";
@@ -25,7 +25,6 @@ import { Boton } from "@/components/ui/Boton";
 import { Aviso } from "@/components/ui/Aviso";
 import { Modal } from "@/components/ui/Modal";
 import { useImprimir } from "@/components/impresion/ProveedorImpresion";
-import { SelectorPapel } from "@/components/impresion/SelectorPapel";
 import { CuadriculaProductos } from "./CuadriculaProductos";
 import { PanelCarrito } from "./PanelCarrito";
 import { PanelCobro, type ResultadoCobro } from "./PanelCobro";
@@ -94,7 +93,12 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
   const [carrito, despachar] = useReducer(reducirCarrito, [] as Carrito);
   const [ventana, setVentana] = useState<Ventana>(null);
   const [aviso, setAviso] = useState<{ texto: string; tipo: "error" | "advertencia" } | null>(null);
-  const [ultimaVenta, setUltimaVenta] = useState<{ numero: number | null; cambio: number | null; total: number } | null>(null);
+  const [ultimaVenta, setUltimaVenta] = useState<{
+    numero: number | null;
+    cambio: number | null;
+    total: number;
+    ticket: DatosTicket;
+  } | null>(null);
   const [enLinea, setEnLinea] = useState(true);
   const [reporte, setReporte] = useState<DatosReporte | null>(null);
   const [colaVentas, setColaVentas] = useState<VentaEncolada[]>([]);
@@ -334,7 +338,12 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
 
   // ── Cobro garantizado (reintentos en caliente + cola local ante caída total de red) ──
   const cobrandoRef = useRef(false);
-  async function cobrar(metodo: MetodoPago, recibido: number | null, cliente: Cliente | null): Promise<ResultadoCobro> {
+  async function cobrar(
+    metodo: MetodoPago,
+    recibido: number | null,
+    cliente: Cliente | null,
+    imprimirTicket: boolean,
+  ): Promise<ResultadoCobro> {
     if (cobrandoRef.current) {
       return { ok: false, error: "Registrando la venta…", reintentable: false };
     }
@@ -367,8 +376,10 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
       if (ticket) {
         localStorage.removeItem(claveCobro(turnoId));
         despachar({ tipo: "vaciar" });
-        imprimir({ tipo: "ticket", datos: ticket, copia: false });
-        setUltimaVenta({ numero: ticket.numero, cambio: ticket.cambio, total: ticket.total });
+        if (imprimirTicket) {
+          imprimir({ tipo: "ticket", datos: ticket, copia: false });
+        }
+        setUltimaVenta({ numero: ticket.numero, cambio: ticket.cambio, total: ticket.total, ticket });
         setVentana(null);
         if (colaVentas.length > 0) void sincronizarCola();
         return { ok: true, cambio: ticket.cambio };
@@ -427,8 +438,10 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
 
           localStorage.removeItem(claveCobro(turnoId));
           despachar({ tipo: "vaciar" });
-          imprimir({ tipo: "ticket", datos: ticketLocal, copia: false });
-          setUltimaVenta({ numero: null, cambio, total });
+          if (imprimirTicket) {
+            imprimir({ tipo: "ticket", datos: ticketLocal, copia: false });
+          }
+          setUltimaVenta({ numero: null, cambio, total, ticket: ticketLocal });
           setVentana(null);
           return { ok: true, cambio };
         }
@@ -609,9 +622,6 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
           {/* Al cobrar no se puede cerrar ni salir a la mitad */}
           {!enCobro && (
             <>
-              <div className="hidden md:block">
-                <SelectorPapel />
-              </div>
               {BOTON_CAJON_ACTIVO && (
                 <button
                   type="button"
@@ -672,6 +682,14 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
                   <span className="num text-3xl leading-none font-bold">{formatearPesos(ultimaVenta.cambio)}</span>
                 </p>
               )}
+              <button
+                type="button"
+                onClick={() => imprimir({ tipo: "ticket", datos: ultimaVenta.ticket, copia: false })}
+                className="flex min-h-10 items-center gap-1.5 rounded-control border border-primario/40 bg-white px-3 text-sm font-semibold text-primario-activo hover:bg-primario/10"
+              >
+                <Printer size={16} aria-hidden />
+                Imprimir
+              </button>
               <button
                 type="button"
                 aria-label="Ocultar"

@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
+import { normalizarAnchoPapel, type AnchoPapel } from "@/lib/impresion/papel";
 
 export type Perfil = {
   id: string;
@@ -9,7 +10,7 @@ export type Perfil = {
   nombreUsuario: string;
   rol: "cajero" | "admin";
   activo: boolean;
-  sede: { id: string; nombre: string; tipo: "panaderia" | "asadero"; activa: boolean } | null;
+  sede: { id: string; nombre: string; tipo: "panaderia" | "asadero"; activa: boolean; anchoPapel: AnchoPapel } | null;
 };
 
 type FilaPerfil = {
@@ -18,7 +19,7 @@ type FilaPerfil = {
   nombre_usuario: string;
   rol: "cajero" | "admin";
   activo: boolean;
-  sede: { id: string; nombre: string; tipo: "panaderia" | "asadero"; activa: boolean } | null;
+  sede: { id: string; nombre: string; tipo: "panaderia" | "asadero"; activa: boolean; ancho_papel?: number | null } | null;
 };
 
 /**
@@ -31,11 +32,19 @@ export const obtenerPerfil = cache(async (): Promise<Perfil | null> => {
   const uid = auth?.claims?.sub;
   if (!uid) return null;
 
-  const { data } = await supabase
+  const inicial = await supabase
     .from("perfiles")
-    .select("id, nombre_completo, nombre_usuario, rol, activo, sede:sedes(id, nombre, tipo, activa)")
+    .select("id, nombre_completo, nombre_usuario, rol, activo, sede:sedes(id, nombre, tipo, activa, ancho_papel)")
     .eq("id", uid)
     .maybeSingle<FilaPerfil>();
+  let data = inicial.data;
+  if (inicial.error?.code === "42703" || inicial.error?.code === "PGRST204") {
+    ({ data } = await supabase
+      .from("perfiles")
+      .select("id, nombre_completo, nombre_usuario, rol, activo, sede:sedes(id, nombre, tipo, activa)")
+      .eq("id", uid)
+      .maybeSingle<FilaPerfil>());
+  }
   if (!data) return null;
 
   return {
@@ -44,7 +53,15 @@ export const obtenerPerfil = cache(async (): Promise<Perfil | null> => {
     nombreUsuario: data.nombre_usuario,
     rol: data.rol,
     activo: data.activo,
-    sede: data.sede,
+    sede: data.sede
+      ? {
+          id: data.sede.id,
+          nombre: data.sede.nombre,
+          tipo: data.sede.tipo,
+          activa: data.sede.activa,
+          anchoPapel: normalizarAnchoPapel(data.sede.ancho_papel),
+        }
+      : null,
   };
 });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Banknote, CreditCard, Delete, Pencil, QrCode, RotateCw, UserRound, X, type LucideIcon } from "lucide-react";
+import { Banknote, CreditCard, Delete, Pencil, Printer, QrCode, RotateCw, UserRound, X, type LucideIcon } from "lucide-react";
 import { formatearPesos } from "@/lib/dominio/dinero";
 import { calcularEfectivo, type MetodoPago } from "@/lib/dominio/cobro";
 import {
@@ -22,7 +22,7 @@ export type ResultadoCobro = { ok: true; cambio: number | null } | { ok: false; 
 type Props = {
   total: number;
   onCancelar: () => void;
-  onConfirmar: (metodo: MetodoPago, recibido: number | null, cliente: Cliente | null) => Promise<ResultadoCobro>;
+  onConfirmar: (metodo: MetodoPago, recibido: number | null, cliente: Cliente | null, imprimirTicket: boolean) => Promise<ResultadoCobro>;
 };
 
 /* Billetes y monedas de Colombia: imágenes en public/billetes (Banco de la República). */
@@ -59,10 +59,11 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
   const [porConfirmar, setPorConfirmar] = useState<{ metodo: MetodoPago; monto: number | null } | null>(null);
   const [cliente, setCliente] = useState<Cliente>(CONSUMIDOR_FINAL);
   const [editandoCliente, setEditandoCliente] = useState(false);
+  const [imprimirTicket, setImprimirTicket] = useState(false);
 
   const efectivo = calcularEfectivo(total, recibido);
 
-  /** Todos los botones de cobro piden confirmación primero. */
+  /** Pide confirmación antes de cobrar (salvo Paga Exacto, que ejecuta directo). */
   function confirmar(m: MetodoPago, monto: number | null) {
     if (enviandoRef.current || enviando) return;
     setPorConfirmar({ metodo: m, monto });
@@ -75,7 +76,7 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
     setEnviando(true);
     setError(null);
     try {
-      const r = await onConfirmar(m, monto, esConsumidorFinal(cliente) ? null : cliente);
+      const r = await onConfirmar(m, monto, esConsumidorFinal(cliente) ? null : cliente, imprimirTicket);
       if (!r.ok) setError({ texto: r.error, reintentable: r.reintentable, recibido: monto });
     } finally {
       enviandoRef.current = false;
@@ -136,6 +137,8 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
           total={total}
           metodo={porConfirmar.metodo}
           recibido={porConfirmar.monto}
+          imprimirTicket={imprimirTicket}
+          onCambiarImprimir={setImprimirTicket}
           onSi={() => ejecutar(porConfirmar.metodo, porConfirmar.monto)}
           onNo={() => setPorConfirmar(null)}
           cliente={cliente}
@@ -177,12 +180,31 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
           ))}
         </div>
 
+        {/* Impresión opcional: por defecto apagada ("Sin impresión"). Tocar para activar/desactivar. */}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={imprimirTicket}
+          onClick={() => setImprimirTicket((v) => !v)}
+          className={`flex min-h-14 shrink-0 items-center gap-2.5 rounded-tarjeta border-2 px-3.5 text-left transition-colors ${
+            imprimirTicket
+              ? "border-primario bg-exito-suave text-primario-activo"
+              : "border-borde bg-superficie text-texto-3 hover:border-borde-activo"
+          }`}
+        >
+          <Printer size={22} className={imprimirTicket ? "text-primario" : "text-texto-3"} aria-hidden />
+          <span className="leading-tight">
+            <span className="block text-[10px] font-bold tracking-wider uppercase">Recibo</span>
+            <span className="block text-sm font-bold">{imprimirTicket ? "Sí imprimir" : "Sin impresión"}</span>
+          </span>
+        </button>
+
         {/* Cliente: por defecto Consumidor Final (DIAN). Tocar para poner los datos. */}
         <button
           type="button"
           onClick={() => setEditandoCliente(true)}
           aria-label={`Cliente: ${cliente.nombre}, ${cliente.tipo} ${cliente.documento}. Cambiar`}
-          className={`flex min-h-14 w-64 shrink-0 items-center gap-3 rounded-tarjeta border-2 px-3 text-left ${
+          className={`flex min-h-14 w-56 shrink-0 items-center gap-3 rounded-tarjeta border-2 px-3 text-left ${
             esConsumidorFinal(cliente)
               ? "border-borde bg-superficie hover:border-borde-activo"
               : "border-primario bg-exito-suave"
@@ -305,14 +327,14 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
               ))}
             </div>
 
-            {/* Exacto: cobra el total justo, debajo del teclado */}
+            {/* Exacto: cobra de una vez sin pedir confirmación */}
             <button
               type="button"
               disabled={enviando}
-              onClick={() => confirmar("efectivo", total)}
+              onClick={() => void ejecutar("efectivo", total)}
               className="col-start-5 flex flex-col items-center justify-center rounded-tarjeta border-2 border-primario bg-exito-suave font-bold text-primario-activo active:scale-[0.97] active:bg-primario active:text-white"
             >
-              <span className="text-xs tracking-wider">PAGA EXACTO</span>
+              <span className="text-xs tracking-wider">{enviando ? "REGISTRANDO…" : "PAGA EXACTO"}</span>
               <span className="num text-2xl">{formatearPesos(total)}</span>
             </button>
           </div>
@@ -457,6 +479,8 @@ function Confirmacion({
   total,
   metodo,
   recibido,
+  imprimirTicket,
+  onCambiarImprimir,
   onSi,
   onNo,
   cliente,
@@ -464,6 +488,8 @@ function Confirmacion({
   total: number;
   metodo: MetodoPago;
   recibido: number | null;
+  imprimirTicket: boolean;
+  onCambiarImprimir: (v: boolean) => void;
   onSi: () => void;
   onNo: () => void;
   cliente: Cliente;
@@ -487,6 +513,20 @@ function Confirmacion({
             <p className="num text-3xl font-bold">{formatearPesos(cambio)}</p>
           </div>
         )}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={imprimirTicket}
+          onClick={() => onCambiarImprimir(!imprimirTicket)}
+          className={`flex min-h-11 items-center justify-center gap-2 rounded-control border text-sm font-semibold ${
+            imprimirTicket
+              ? "border-primario bg-exito-suave text-primario-activo"
+              : "border-borde bg-suave text-texto-3"
+          }`}
+        >
+          <Printer size={18} aria-hidden />
+          {imprimirTicket ? "Imprimir recibo: Sí" : "Imprimir recibo: No (sin impresión)"}
+        </button>
         <div className="grid grid-cols-2 gap-2">
           <Boton tamano="lg" onClick={onNo}>
             No

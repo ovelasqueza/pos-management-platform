@@ -1,18 +1,35 @@
 "use client";
 
+import { useEffect } from "react";
 import { Printer } from "lucide-react";
-import { ANCHOS_PAPEL, guardarAnchoPapel, useAnchoPapel } from "@/lib/impresion/papel";
+import { ANCHOS_PAPEL, guardarAnchoPapel, useAnchoPapel, type AnchoPapel } from "@/lib/impresion/papel";
+import { cambiarAnchoPapelSede } from "@/app/admin/acciones-sedes";
 
 type Props = {
-  /** "oscuro" para la cabecera verde de la caja; "claro" para las pantallas de administración. */
+  /** "oscuro" para la cabecera verde; "claro" para las pantallas de administración. */
   variante?: "oscuro" | "claro";
+  /** Si el admin tiene una sede seleccionada, cambiar el papel también actualiza esa sede. */
+  sedeId?: string;
+  anchoSede?: AnchoPapel;
   className?: string;
 };
 
-/** Selector del ancho del rollo de la impresora. Se guarda por equipo. */
-export function SelectorPapel({ variante = "oscuro", className = "" }: Props) {
-  const ancho = useAnchoPapel();
+/** Selector del ancho del rollo de la impresora (solo visible para el administrador). */
+export function SelectorPapel({ variante = "oscuro", sedeId, anchoSede, className = "" }: Props) {
+  const anchoLocal = useAnchoPapel();
+  const ancho = anchoSede ?? anchoLocal;
   const oscuro = variante === "oscuro";
+
+  useEffect(() => {
+    if (anchoSede) guardarAnchoPapel(anchoSede);
+  }, [anchoSede]);
+
+  function elegir(nuevo: AnchoPapel) {
+    guardarAnchoPapel(nuevo);
+    if (sedeId) {
+      void cambiarAnchoPapelSede(sedeId, nuevo);
+    }
+  }
 
   return (
     <div
@@ -21,7 +38,7 @@ export function SelectorPapel({ variante = "oscuro", className = "" }: Props) {
       } ${className}`}
       role="group"
       aria-label="Ancho del papel de impresión"
-      title="Ancho del rollo de la impresora"
+      title={sedeId ? "Ancho del rollo de impresora de esta sede" : "Ancho del rollo de la impresora"}
     >
       <Printer size={18} className="ml-1 shrink-0" aria-hidden />
       {ANCHOS_PAPEL.map((a) => {
@@ -30,7 +47,7 @@ export function SelectorPapel({ variante = "oscuro", className = "" }: Props) {
           <button
             key={a}
             type="button"
-            onClick={() => guardarAnchoPapel(a)}
+            onClick={() => elegir(a)}
             aria-pressed={activo}
             aria-label={`Usar papel de ${a} milímetros`}
             className={`min-h-9 rounded px-2 text-xs font-bold ${

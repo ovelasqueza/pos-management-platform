@@ -43,7 +43,7 @@ export default async function Caja() {
     ]);
 
     return (
-      <ProveedorImpresion>
+      <ProveedorImpresion anchoSede={cajero.sede.anchoPapel}>
         <AbrirTurno
           sede={cajero.sede.nombre}
           cajero={cajero.nombreCompleto}
@@ -58,7 +58,7 @@ export default async function Caja() {
   const productos = await cargarProductosVendibles(supabase);
 
   return (
-    <ProveedorImpresion>
+    <ProveedorImpresion anchoSede={cajero.sede.anchoPapel}>
       <PuntoVenta
         key={turno.id}
         turnoId={turno.id}

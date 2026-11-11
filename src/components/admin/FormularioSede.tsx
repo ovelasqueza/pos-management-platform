@@ -8,6 +8,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Aviso } from "@/components/ui/Aviso";
 import { crearSede, editarSede } from "@/app/admin/acciones-sedes";
 import { TIPOS_SEDE, nombreTipo, type TipoSede } from "@/lib/dominio/sede";
+import { ANCHOS_PAPEL, type AnchoPapel } from "@/lib/impresion/papel";
 import type { EstadoFormulario } from "@/lib/formularios";
 
 type SedeEditable = {
@@ -18,6 +19,7 @@ type SedeEditable = {
   ciudad: string | null;
   direccion: string | null;
   telefono: string | null;
+  ancho_papel?: AnchoPapel;
 };
 
 function Formulario({ sede, onListo }: { sede?: SedeEditable; onListo: () => void }) {
@@ -74,6 +76,28 @@ function Formulario({ sede, onListo }: { sede?: SedeEditable; onListo: () => voi
         <Campo etiqueta="Dirección / barrio (opcional)" name="direccion" defaultValue={sede?.direccion ?? ""} error={c.direccion} />
       </div>
       <Campo etiqueta="Teléfono (opcional)" name="telefono" type="tel" defaultValue={sede?.telefono ?? ""} error={c.telefono} />
+
+      <fieldset className="flex flex-col gap-1">
+        <legend className="mb-1 text-sm font-semibold text-texto-2">Papel de impresora en caja</legend>
+        <div className="grid grid-cols-2 gap-2">
+          {ANCHOS_PAPEL.map((ancho) => (
+            <label
+              key={ancho}
+              className="flex min-h-12 cursor-pointer items-center justify-center rounded-control border border-borde-activo font-medium has-checked:border-primario has-checked:bg-exito-suave has-checked:text-primario-activo"
+            >
+              <input
+                type="radio"
+                name="ancho_papel"
+                value={String(ancho)}
+                defaultChecked={(sede?.ancho_papel ?? 80) === ancho}
+                className="sr-only"
+              />
+              Rollo de {ancho} mm
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
       {estado.error && <Aviso>{estado.error}</Aviso>}
 
       <Boton type="submit" variante="primario" disabled={enviando}>

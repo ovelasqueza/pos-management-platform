@@ -18,6 +18,7 @@ export default async function PaginaSedes() {
               <th className="px-4 py-3 font-medium">Tipo</th>
               <th className="hidden px-4 py-3 font-medium md:table-cell">Ciudad · Dirección / barrio</th>
               <th className="hidden px-4 py-3 font-medium md:table-cell">Teléfono</th>
+              <th className="px-4 py-3 font-medium">Papel</th>
               <th className="px-4 py-3 text-right font-medium">Activa</th>
               <th className="w-12" />
             </tr>
@@ -42,6 +43,7 @@ export default async function PaginaSedes() {
                   )}
                 </td>
                 <td className="num hidden px-4 py-2 text-texto-2 md:table-cell">{s.telefono ?? "—"}</td>
+                <td className="num px-4 py-2 text-sm font-semibold text-texto-2">{s.ancho_papel} mm</td>
                 <td className="px-2 py-1">
                   <EstadoSede id={s.id} nombre={s.nombre} activa={s.activa} />
                 </td>

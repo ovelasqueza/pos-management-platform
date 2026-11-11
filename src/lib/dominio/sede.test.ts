@@ -15,9 +15,29 @@ describe("ordenarSedes", () => {
 });
 
 describe("esquemaCrearSede", () => {
-  it("convierte opcionales vacíos en null", () => {
+  it("convierte opcionales vacíos en null y asigna papel de 80 mm por defecto", () => {
     const r = esquemaCrearSede.parse({ nombre: " Norte ", nit: " 900.123.456-7 ", tipo: "asadero", ciudad: " ", direccion: "", telefono: "  " });
-    expect(r).toEqual({ nombre: "Norte", nit: "900123456-7", tipo: "asadero", ciudad: null, direccion: null, telefono: null });
+    expect(r).toEqual({
+      nombre: "Norte",
+      nit: "900123456-7",
+      tipo: "asadero",
+      ciudad: null,
+      direccion: null,
+      telefono: null,
+      ancho_papel: 80,
+    });
+  });
+  it("permite configurar papel de 58 mm o 80 mm por sede", () => {
+    const r = esquemaCrearSede.parse({
+      nombre: "Sur",
+      nit: "",
+      tipo: "panaderia",
+      ciudad: "",
+      direccion: "",
+      telefono: "",
+      ancho_papel: "58",
+    });
+    expect(r.ancho_papel).toBe(58);
   });
   it("exige nombre y tipo válido", () => {
     expect(esquemaCrearSede.safeParse({ nombre: "", nit: "", tipo: "asadero", ciudad: "", direccion: "", telefono: "" }).success).toBe(false);

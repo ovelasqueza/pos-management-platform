@@ -4,7 +4,7 @@ import { createContext, use, useCallback, useEffect, useRef, useState, type Reac
 import { createPortal } from "react-dom";
 import { AperturaCajon, ReporteTurno, Ticket } from "./Documentos";
 import type { Documento } from "@/lib/dominio/documentos";
-import { useAnchoPapel } from "@/lib/impresion/papel";
+import { guardarAnchoPapel, useAnchoPapel, type AnchoPapel } from "@/lib/impresion/papel";
 
 type Imprimir = (doc: Documento) => void;
 
@@ -13,10 +13,16 @@ const Contexto = createContext<Imprimir | null>(null);
 /**
  * Renderiza el documento en una zona oculta (solo visible al imprimir)
  * y abre el diálogo de impresión del navegador.
+ * Si se pasa `anchoSede`, fija automáticamente el ancho de papel configurado para esa sede.
  */
-export function ProveedorImpresion({ children }: { children: ReactNode }) {
+export function ProveedorImpresion({ children, anchoSede }: { children: ReactNode; anchoSede?: AnchoPapel }) {
   const [trabajo, setTrabajo] = useState<{ doc: Documento; n: number } | null>(null);
-  const ancho = useAnchoPapel();
+  const anchoLocal = useAnchoPapel();
+  const ancho = anchoSede ?? anchoLocal;
+
+  useEffect(() => {
+    if (anchoSede) guardarAnchoPapel(anchoSede);
+  }, [anchoSede]);
 
   // @page no acepta variables CSS: se inyecta el tamaño elegido (80 mm o 58 mm).
   useEffect(() => {
