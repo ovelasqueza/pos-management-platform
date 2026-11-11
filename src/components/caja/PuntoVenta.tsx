@@ -55,9 +55,9 @@ type Props = {
 
 type Ventana = "cobro" | "ventas" | "gastos" | "cierre" | "salir" | null;
 
-/** Texto del botón Cajón según el resultado: "papel" = el agente no respondió y se imprimió la página mínima. */
+/** Texto del botón Abrir cajón según el resultado: "papel" = el agente no respondió y se imprimió la página mínima. */
 const TEXTO_CAJON = {
-  listo: "Cajón",
+  listo: "Abrir cajón",
   abriendo: "Abriendo…",
   abierto: "¡Abierto!",
   papel: "Abierto (papel)",
@@ -605,9 +605,24 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
           <p className="text-xs text-white/75">{enCobro ? "Cobro" : "Venta"}</p>
         </div>
 
-        {/* Ventas y Gastos: lo que el cajero usa durante el turno, bien visibles */}
+        {/* Abrir cajón, Ventas y Gastos: lo que el cajero usa durante el turno, grandes y bien visibles */}
         {!enCobro && (
           <div className="flex shrink-0 gap-2">
+            {BOTON_CAJON_ACTIVO && (
+              <button
+                type="button"
+                onClick={abrirCajon}
+                disabled={estadoCajon === "abriendo"}
+                className={botonDestacado}
+                aria-label="Abrir cajón"
+              >
+                <Vault size={22} aria-hidden />
+                <span>{TEXTO_CAJON[estadoCajon]}</span>
+                <span className="sr-only" role="status" aria-live="polite">
+                  {estadoCajon === "listo" ? "" : TEXTO_CAJON[estadoCajon]}
+                </span>
+              </button>
+            )}
             <button type="button" onClick={() => setVentana("ventas")} className={botonDestacado}>
               <Receipt size={22} aria-hidden />
               Ventas
@@ -668,21 +683,6 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
                 <RefreshCw size={20} className={actualizandoCatalogo ? "animate-spin" : ""} aria-hidden />
                 <span className="hidden xl:inline">{actualizandoCatalogo ? "Actualizando…" : "Actualizar"}</span>
               </button>
-              {BOTON_CAJON_ACTIVO && (
-                <button
-                  type="button"
-                  onClick={abrirCajon}
-                  disabled={estadoCajon === "abriendo"}
-                  className={botonCabecera}
-                  aria-label="Abrir cajón"
-                >
-                  <Vault size={20} aria-hidden />
-                  <span className="hidden lg:inline">{TEXTO_CAJON[estadoCajon]}</span>
-                  <span className="sr-only" role="status" aria-live="polite">
-                    {estadoCajon === "listo" ? "" : TEXTO_CAJON[estadoCajon]}
-                  </span>
-                </button>
-              )}
               <button type="button" onClick={pedirCierre} className={botonCabecera}>
                 <Lock size={20} aria-hidden />
                 <span className="hidden lg:inline">Cerrar turno</span>
