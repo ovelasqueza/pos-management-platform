@@ -20,11 +20,7 @@ export async function cerrarTurnoAdmin(
   if (!Number.isInteger(aMayor) || aMayor < 0 || aMayor > contado) return { error: "A caja mayor no puede ser más que lo contado" };
 
   const supabase = await crearClienteServidor();
-  const { data: turnoActual } = await supabase.from("turnos").select("base").eq("id", turnoId).maybeSingle();
-  const baseRegistrada = Number(turnoActual?.base ?? 0);
-  const contadoEnvio = contado + (baseRegistrada > 0 ? baseRegistrada : 0);
-
-  const { data, error } = await supabase.rpc("cerrar_turno", { p_turno: turnoId, p_contado: contadoEnvio, p_a_mayor: aMayor });
+  const { data, error } = await supabase.rpc("cerrar_turno", { p_turno: turnoId, p_contado: contado, p_a_mayor: aMayor });
   if (error) return { error: mensajeDeError(error, "No se pudo cerrar el turno") };
 
   revalidatePath("/admin", "layout");

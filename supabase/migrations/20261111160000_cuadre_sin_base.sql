@@ -54,3 +54,64 @@ language sql stable security definer set search_path = '' as $$
   from public.turnos t
   where t.id = p_turno;
 $$;
+
+-- Cierre de turno: lo contado por el cajero corresponde a las ventas
+create or replace function public.cerrar_turno(p_turno uuid, p_contado int, p_a_mayor int default null) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_usuario public.perfiles;
+  v_turno public.turnos;
+  v_esperado int;
+  v_a_mayor int := coalesce(p_a_mayor, p_contado, 0);
+  v_qr bigint;
+  v_tarjeta bigint;
+  v_reporte jsonb;
+begin
+  select * into v_usuario from public.perfiles where id = auth.uid() and activo;
+  if v_usuario.id is null then
+    raise exception 'SIN_PERMISO';
+  end if;
+
+  select * into v_turno from public.turnos where id = p_turno for update;
+  if v_turno.id is null then
+    raise exception 'TURNO_NO_EXISTE';
+  end if;
+  if v_usuario.rol = 'cajero' and v_turno.cajero_id <> v_usuario.id then
+    raise exception 'SIN_PERMISO';
+  end if;
+  if v_turno.cerrado_en is not null then
+    raise exception 'TURNO_CERRADO';
+  end if;
+  if p_contado is null or p_contado < 0 or p_contado > 999999999 then
+    raise exception 'CONTADO_INVALIDO';
+  end if;
+  if v_a_mayor < 0 or v_a_mayor > p_contado then
+    raise exception 'ENVIO_MAYOR_INVALIDO';
+  end if;
+
+  v_esperado := privado.efectivo_esperado(v_turno.id);
+  v_reporte := privado.armar_reporte(v_turno.id, p_contado, v_esperado, v_usuario, v_a_mayor);
+
+  update public.turnos set
+    base = 0,
+    cerrado_en = now(),
+    cerrado_por = v_usuario.id,
+    efectivo_contado = p_contado,
+    efectivo_esperado = v_esperado,
+    diferencia = p_contado - v_esperado,
+    efectivo_a_mayor = v_a_mayor,
+    reporte = v_reporte
+  where id = v_turno.id;
+
+  select coalesce(sum(v.total) filter (where v.metodo = 'transferencia'), 0),
+         coalesce(sum(v.total) filter (where v.metodo = 'tarjeta'), 0)
+  into v_qr, v_tarjeta
+  from public.ventas v where v.turno_id = v_turno.id and v.anulada_en is null;
+
+  perform privado.mover_caja_mayor(v_turno.sede_id, 'efectivo', v_a_mayor, 'cierre_turno', v_turno.id, null, v_usuario.id, null);
+  perform privado.mover_caja_mayor(v_turno.sede_id, 'transferencia', v_qr, 'cierre_turno', v_turno.id, null, v_usuario.id, null);
+  perform privado.mover_caja_mayor(v_turno.sede_id, 'tarjeta', v_tarjeta, 'cierre_turno', v_turno.id, null, v_usuario.id, null);
+
+  return v_reporte;
+end;
+$$;
