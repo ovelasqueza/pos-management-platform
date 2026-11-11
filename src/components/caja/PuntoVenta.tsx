@@ -209,24 +209,6 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
     }
   }, [router, sincronizar, supabase, turnoCerradoPorOtro, turnoId]);
 
-  // Escucha avisos instantáneos cuando el administrador guarda cambios (productos, precios, papel 80/58 mm o cierre)
-  useEffect(() => {
-    const canal = supabase
-      .channel("pos-sync")
-      .on("broadcast", { event: "actualizar" }, ({ payload }) => {
-        if (cerrado.current) return;
-        if (payload?.tipo === "recargar") {
-          window.location.reload();
-          return;
-        }
-        void actualizarEnVivo();
-      })
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(canal);
-    };
-  }, [actualizarEnVivo, supabase]);
-
   /**
    * Cambios del carrito hechos por el cajero. Si lo deja vacío, abandonó ese cobro:
    * se descarta la clave pendiente para que un carrito idéntico posterior sea una venta nueva.

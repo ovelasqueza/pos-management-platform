@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { requerirAdmin } from "@/lib/sesion";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { mensajeDeError } from "@/lib/dominio/errores";
-import { notificarCajasAbiertas } from "@/lib/sincronizacion";
 import type { DatosReporte } from "@/lib/dominio/documentos";
 
 /**
@@ -25,6 +24,5 @@ export async function cerrarTurnoAdmin(
   if (error) return { error: mensajeDeError(error, "No se pudo cerrar el turno") };
 
   revalidatePath("/admin", "layout");
-  void notificarCajasAbiertas("catalogo");
   return { reporte: data as DatosReporte };
 }
