@@ -9,6 +9,7 @@ param(
   [ValidateSet(2, 5)][int]$Pin = 2,
   # Direcciones desde donde se abre la app de caja
   [string[]]$Origenes = @(
+    'https://pos.puntocloud.com.co',
     'https://harmonious-griffin-48958c.netlify.app',
     'http://localhost:3000',
     'http://127.0.0.1:3000',

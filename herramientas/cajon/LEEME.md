@@ -19,6 +19,7 @@ Desde ese momento el agente arranca solo al encender o reiniciar el equipo. Qued
 
 El agente solo obedece a estas direcciones de la app:
 
+- `https://pos.puntocloud.com.co`
 - `https://harmonious-griffin-48958c.netlify.app`
 - `http://localhost:3000`
 - `http://127.0.0.1:3000`

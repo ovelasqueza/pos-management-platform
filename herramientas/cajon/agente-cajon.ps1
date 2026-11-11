@@ -105,6 +105,7 @@ function LeerConfig {
       pin = 2
       impresora = $null
       origenes = @(
+        'https://pos.puntocloud.com.co',
         'https://harmonious-griffin-48958c.netlify.app',
         'http://localhost:3000',
         'http://127.0.0.1:3000',
