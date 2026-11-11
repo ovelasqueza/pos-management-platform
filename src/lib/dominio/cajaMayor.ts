@@ -107,6 +107,17 @@ export function envioValido(contado: number, aMayor: number): boolean {
 
 export const quedaEnCaja = (contado: number, aMayor: number) => contado - aMayor;
 
+/** Base fija en cajón / caja menor al cerrar turno ($ 100.000). */
+export const BASE_CAJA_MENOR = 100_000;
+
+/** Calcula la base que queda en cajón y lo que se transfiere a caja mayor al cerrar. */
+export function calcularCierreBase(contado: number, base: number = BASE_CAJA_MENOR): { baseCaja: number; aMayor: number } {
+  const c = Math.max(0, Math.floor(contado));
+  const baseCaja = Math.min(c, base);
+  const aMayor = Math.max(0, c - base);
+  return { baseCaja, aMayor };
+}
+
 export type TipoMovimiento = "cierre_turno" | "gasto" | "anulacion_gasto" | "admin";
 
 export const nombreMovimiento: Record<TipoMovimiento, string> = {

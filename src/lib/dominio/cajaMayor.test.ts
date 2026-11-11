@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   SALDO_VACIO,
   SIN_PARTES,
+  calcularCierreBase,
   describirOrigen,
   envioValido,
   leerSaldo,
@@ -63,6 +64,12 @@ describe("envío al cerrar", () => {
     expect(envioValido(50000, 50001)).toBe(false);
     expect(envioValido(50000, -1)).toBe(false);
     expect(quedaEnCaja(50000, 30000)).toBe(20000);
+  });
+  it("calcularCierreBase deja 100.000 de base y el resto a caja mayor", () => {
+    expect(calcularCierreBase(350000)).toEqual({ baseCaja: 100000, aMayor: 250000 });
+    expect(calcularCierreBase(100000)).toEqual({ baseCaja: 100000, aMayor: 0 });
+    expect(calcularCierreBase(60000)).toEqual({ baseCaja: 60000, aMayor: 0 });
+    expect(calcularCierreBase(0)).toEqual({ baseCaja: 0, aMayor: 0 });
   });
 });
 

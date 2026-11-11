@@ -70,15 +70,17 @@ function CerrarTurno({ turno, cerrar, alCerrar }: { turno: TurnoFila; cerrar: ()
   const [pendiente, iniciar] = useTransition();
 
   const contadoActual = leerPesos(texto, 0);
-  const mayorActual = textoMayor.trim() === "" ? 0 : leerPesos(textoMayor, 0);
+  const mayorPorDefecto = contadoActual !== null ? Math.max(0, contadoActual - 100_000) : 0;
+  const mayorActual = textoMayor.trim() === "" ? mayorPorDefecto : leerPesos(textoMayor, 0);
 
   function confirmar() {
     const contado = leerPesos(texto, 0);
     if (contado === null) return setError("Escribe el efectivo contado");
-    if (mayorActual === null || !envioValido(contado, mayorActual)) return setError("A caja mayor no puede ser más que lo contado");
+    const aMayor = textoMayor.trim() === "" ? Math.max(0, contado - 100_000) : leerPesos(textoMayor, 0);
+    if (aMayor === null || !envioValido(contado, aMayor)) return setError("A caja mayor no puede ser más que lo contado");
     setError(undefined);
     iniciar(async () => {
-      const r = await cerrarTurnoAdmin(turno.id, contado, mayorActual);
+      const r = await cerrarTurnoAdmin(turno.id, contado, aMayor);
       if (r.error || !r.reporte) setError(r.error);
       else alCerrar(r.reporte);
     });
@@ -94,13 +96,13 @@ function CerrarTurno({ turno, cerrar, alCerrar }: { turno: TurnoFila; cerrar: ()
         <Campo
           etiqueta="A caja mayor (efectivo)"
           inputMode="numeric"
-          placeholder="0"
+          placeholder={contadoActual !== null ? String(mayorPorDefecto) : "0"}
           value={textoMayor}
           onChange={(e) => setTextoMayor(e.target.value)}
           className="num"
         />
         <p className="flex justify-between text-sm text-texto-2">
-          <span>Queda en cajón · QR y tarjeta pasan solos a caja mayor</span>
+          <span>Base cajón ($100.000) · QR y tarjeta pasan solos a caja mayor</span>
           <span className="num font-semibold text-texto">
             {contadoActual !== null && mayorActual !== null && envioValido(contadoActual, mayorActual)
               ? formatearPesos(quedaEnCaja(contadoActual, mayorActual))

@@ -371,6 +371,35 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
     };
   }, [colaVentas.length, sincronizarCola]);
 
+  // ── Cajón: sin papel con el agente del equipo; si no está, con la impresión mínima ──
+  const abriendoCajon = useRef(false);
+  const temporizadorCajon = useRef<number | null>(null);
+  const [estadoCajon, setEstadoCajon] = useState<"listo" | "abriendo" | "abierto" | "papel">("listo");
+  useEffect(
+    () => () => {
+      if (temporizadorCajon.current !== null) window.clearTimeout(temporizadorCajon.current);
+    },
+    [],
+  );
+  async function abrirCajon(opciones?: { evitarImpresionSiHayTicket?: boolean }) {
+    const evitarImpresion = opciones?.evitarImpresionSiHayTicket === true;
+    if (abriendoCajon.current) return;
+    abriendoCajon.current = true;
+    if (temporizadorCajon.current !== null) window.clearTimeout(temporizadorCajon.current);
+    navigator.vibrate?.(12);
+    setEstadoCajon("abriendo");
+    try {
+      const sinPapel = await abrirCajonSinPapel();
+      if (!sinPapel && !evitarImpresion) {
+        imprimir({ tipo: "cajon" });
+      }
+      setEstadoCajon(sinPapel ? "abierto" : "papel");
+    } finally {
+      abriendoCajon.current = false;
+      temporizadorCajon.current = window.setTimeout(() => setEstadoCajon("listo"), 1600);
+    }
+  }
+
   // ── Cobro garantizado (reintentos en caliente + cola local ante caída total de red) ──
   const cobrandoRef = useRef(false);
   async function cobrar(
@@ -411,6 +440,9 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
       if (ticket) {
         localStorage.removeItem(claveCobro(turnoId));
         despachar({ tipo: "vaciar" });
+        if (metodo === "efectivo") {
+          void abrirCajon({ evitarImpresionSiHayTicket: imprimirTicket });
+        }
         if (imprimirTicket) {
           imprimir({ tipo: "ticket", datos: ticket, copia: false });
         }
@@ -473,6 +505,9 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
 
           localStorage.removeItem(claveCobro(turnoId));
           despachar({ tipo: "vaciar" });
+          if (metodo === "efectivo") {
+            void abrirCajon({ evitarImpresionSiHayTicket: imprimirTicket });
+          }
           if (imprimirTicket) {
             imprimir({ tipo: "ticket", datos: ticketLocal, copia: false });
           }
@@ -487,32 +522,6 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
       return { ok: false, error: "No se pudo registrar la venta", reintentable: true };
     } finally {
       cobrandoRef.current = false;
-    }
-  }
-
-  // ── Cajón: sin papel con el agente del equipo; si no está, con la impresión mínima ──
-  const abriendoCajon = useRef(false);
-  const temporizadorCajon = useRef<number | null>(null);
-  const [estadoCajon, setEstadoCajon] = useState<"listo" | "abriendo" | "abierto" | "papel">("listo");
-  useEffect(
-    () => () => {
-      if (temporizadorCajon.current !== null) window.clearTimeout(temporizadorCajon.current);
-    },
-    [],
-  );
-  async function abrirCajon() {
-    if (abriendoCajon.current) return;
-    abriendoCajon.current = true;
-    if (temporizadorCajon.current !== null) window.clearTimeout(temporizadorCajon.current);
-    navigator.vibrate?.(12);
-    setEstadoCajon("abriendo");
-    try {
-      const sinPapel = await abrirCajonSinPapel();
-      if (!sinPapel) imprimir({ tipo: "cajon" });
-      setEstadoCajon(sinPapel ? "abierto" : "papel");
-    } finally {
-      abriendoCajon.current = false;
-      temporizadorCajon.current = window.setTimeout(() => setEstadoCajon("listo"), 1600);
     }
   }
 
@@ -611,7 +620,7 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
             {BOTON_CAJON_ACTIVO && (
               <button
                 type="button"
-                onClick={abrirCajon}
+                onClick={() => void abrirCajon()}
                 disabled={estadoCajon === "abriendo"}
                 className={botonDestacado}
                 aria-label="Abrir cajón"
