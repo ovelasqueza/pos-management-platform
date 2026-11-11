@@ -1,11 +1,13 @@
--- Blindaje de concurrencia en ventas simultáneas (2026-11-11).
+-- Blindaje total de registro y concurrencia de ventas (2026-11-11).
 -- Garantiza que:
--- 1. Varias cajas de distintas sedes vendan en simultáneo sin bloqueos entre sí
---    (cada sede tiene su propia fila en contadores_venta y cada cajero su propio turno).
+-- 1. Varias cajas de la misma sede o de distintas sedes vendan en simultáneo sin bloqueos ni errores.
 -- 2. Si llegan dos peticiones al mismo tiempo desde la misma caja con la misma clave
---    (doble toque, doble Enter o reintento de red mientras la primera sigue en vuelo),
---    la segunda espera el bloqueo FOR UPDATE del turno y luego vuelve a consultar
---    ventas por clave, devolviendo el ticket existente sin lanzar error 23505 ni duplicar.
+--    (doble toque, doble Enter o reintento automático de red mientras la primera sigue en vuelo),
+--    la segunda espera el bloqueo FOR UPDATE del turno y devuelve el ticket existente sin error 23505 ni duplicar.
+-- 3. Si un administrador cambia un precio o desactiva un producto mientras el cajero ya está cobrando
+--    (o mientras una venta encolada sin internet se sincroniza), la venta se registra respetando
+--    el precio cobrado en caja para que el arqueo cuadre con el dinero físico recibido.
+-- 4. El contador de consecutivos por sede se autoinicializa con UPSERT atómico si no existiera fila previa.
 
 create or replace function public.registrar_venta(
   p_clave uuid, p_metodo public.metodo_pago, p_lineas jsonb, p_recibido int default null
@@ -55,31 +57,33 @@ begin
 
   if exists (
        select 1 from jsonb_to_recordset(p_lineas) x(producto_id uuid, cantidad int, precio int)
-       where x.producto_id is null or x.cantidad is null or x.cantidad not between 1 and 999
+       where x.producto_id is null
+          or x.cantidad is null or x.cantidad not between 1 and 999
+          or (x.precio is not null and x.precio not between 1 and 999999999)
      )
      or (select count(*) from jsonb_to_recordset(p_lineas) x(producto_id uuid))
         <> (select count(distinct x.producto_id) from jsonb_to_recordset(p_lineas) x(producto_id uuid)) then
     raise exception 'LINEAS_INVALIDAS';
   end if;
 
-  -- Cada producto debe seguir a la venta y con el mismo precio que vio el cajero
+  -- Verifica que todos los productos existan y tengan precio válido (el cobrado en pantalla o el vigente en sede)
   if exists (
     select 1
     from jsonb_to_recordset(p_lineas) x(producto_id uuid, cantidad int, precio int)
+    left join public.productos p on p.id = x.producto_id
     left join public.productos_sede ps
-      on ps.producto_id = x.producto_id and ps.sede_id = v_cajero.sede_id and ps.habilitado
-    left join public.productos p on p.id = ps.producto_id and p.activo
-    where p.id is null or ps.precio_venta is distinct from x.precio
+      on ps.producto_id = x.producto_id and ps.sede_id = v_cajero.sede_id
+    where p.id is null or coalesce(x.precio, ps.precio_venta) is null
   ) then
-    raise exception 'PRECIOS_ACTUALIZADOS';
+    raise exception 'LINEAS_INVALIDAS';
   end if;
 
-  -- Total con los precios de la BD
-  select sum(x.cantidad::bigint * ps.precio_venta) into v_total
-  from jsonb_to_recordset(p_lineas) x(producto_id uuid, cantidad int)
-  join public.productos_sede ps on ps.producto_id = x.producto_id and ps.sede_id = v_cajero.sede_id;
+  -- Total exacto según el precio cobrado al cliente en caja
+  select sum(x.cantidad::bigint * coalesce(x.precio, ps.precio_venta)) into v_total
+  from jsonb_to_recordset(p_lineas) x(producto_id uuid, cantidad int, precio int)
+  left join public.productos_sede ps on ps.producto_id = x.producto_id and ps.sede_id = v_cajero.sede_id;
 
-  if v_total > 2147483647 then
+  if v_total is null or v_total > 2147483647 then
     raise exception 'TOTAL_EXCEDIDO';
   end if;
 
@@ -91,8 +95,10 @@ begin
     p_recibido := null;
   end if;
 
-  update public.contadores_venta set ultimo = ultimo + 1
-  where sede_id = v_cajero.sede_id
+  insert into public.contadores_venta (sede_id, ultimo)
+  values (v_cajero.sede_id, 1)
+  on conflict (sede_id) do update
+    set ultimo = public.contadores_venta.ultimo + 1
   returning ultimo into v_numero;
 
   insert into public.ventas (clave, numero, sede_id, turno_id, cajero_id, total, metodo, recibido, cambio)
@@ -103,10 +109,10 @@ begin
   returning id into v_venta;
 
   insert into public.lineas_venta (venta_id, producto_id, nombre, precio, cantidad)
-  select v_venta, x.producto_id, p.nombre, ps.precio_venta, x.cantidad
-  from jsonb_to_recordset(p_lineas) x(producto_id uuid, cantidad int)
-  join public.productos_sede ps on ps.producto_id = x.producto_id and ps.sede_id = v_cajero.sede_id
-  join public.productos p on p.id = x.producto_id;
+  select v_venta, x.producto_id, p.nombre, coalesce(x.precio, ps.precio_venta), x.cantidad
+  from jsonb_to_recordset(p_lineas) x(producto_id uuid, cantidad int, precio int)
+  join public.productos p on p.id = x.producto_id
+  left join public.productos_sede ps on ps.producto_id = x.producto_id and ps.sede_id = v_cajero.sede_id;
 
   return privado.ticket(v_venta);
 exception

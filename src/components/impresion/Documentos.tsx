@@ -126,7 +126,7 @@ export function Ticket({ datos, copia }: { datos: DatosTicket; copia: boolean })
       )}
       <Linea />
       <Seccion>
-        <Fila izq={<strong>Venta #{datos.numero}</strong>} der={formatearFechaHora(datos.fecha)} />
+        <Fila izq={<strong>{datos.numero > 0 ? `Venta #${datos.numero}` : "Venta registrada"}</strong>} der={formatearFechaHora(datos.fecha)} />
         <Fila izq="Cajero" der={datos.cajero} />
         <Fila izq="Cliente" der={datos.cliente?.nombre ?? CONSUMIDOR_FINAL.nombre} />
         <Fila

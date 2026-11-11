@@ -75,8 +75,14 @@ export function esCodigo(error: ErrorBD, codigo: string): boolean {
   return codigoDeError(error) === codigo;
 }
 
-/** Error de red (sin respuesta del servidor). */
-export function esErrorDeRed(error: { message?: string } | null | undefined): boolean {
-  const m = error?.message ?? "";
-  return /fetch|network|Failed to|Load failed|timeout/i.test(m);
+/** Error de red o tiempo de espera agotado (sin respuesta del servidor). */
+export function esErrorDeRed(error: { code?: string; message?: string; name?: string } | null | undefined): boolean {
+  const m = `${error?.name ?? ""} ${error?.message ?? ""} ${error?.code ?? ""}`;
+  return /fetch|network|Failed to|Load failed|timeout|timed out|abort|offline|connection|socket|ECONN|502|503|504/i.test(m);
+}
+
+/** Error por token JWT expirado tras horas de inactividad en un turno 24/7. */
+export function esErrorDeSesion(error: { code?: string; message?: string } | null | undefined): boolean {
+  const m = `${error?.code ?? ""} ${error?.message ?? ""}`;
+  return /PGRST301|JWT|token.*expired|invalid.*token|401/i.test(m);
 }

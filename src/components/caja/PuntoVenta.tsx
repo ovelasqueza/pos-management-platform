@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CircleCheck, Lock, LogOut, Receipt, ShoppingCart, Vault, Wallet, X } from "lucide-react";
+import { ArrowLeft, CircleCheck, CloudUpload, Lock, LogOut, Receipt, ShoppingCart, Vault, Wallet, X } from "lucide-react";
 import { crearClienteNavegador } from "@/lib/supabase/browser";
 import { cargarProductosVendibles } from "@/lib/caja/productos";
 import { BOTON_CAJON_ACTIVO, abrirCajonSinPapel } from "@/lib/caja/cajon";
@@ -17,10 +17,10 @@ import {
 } from "@/lib/dominio/carrito";
 import type { MetodoPago } from "@/lib/dominio/cobro";
 import { formatearPesos } from "@/lib/dominio/dinero";
-import { esConsumidorFinal, type Cliente } from "@/lib/dominio/cliente";
+import { CONSUMIDOR_FINAL, esConsumidorFinal, type Cliente } from "@/lib/dominio/cliente";
 import { nuevoUUID } from "@/lib/uuid";
 import type { DatosReporte, DatosTicket } from "@/lib/dominio/documentos";
-import { esCodigo, esErrorDeRed, mensajeDeError } from "@/lib/dominio/errores";
+import { esCodigo, esErrorDeRed, esErrorDeSesion, mensajeDeError } from "@/lib/dominio/errores";
 import { Boton } from "@/components/ui/Boton";
 import { Aviso } from "@/components/ui/Aviso";
 import { Modal } from "@/components/ui/Modal";
@@ -61,6 +61,20 @@ const iniciales = (nombre: string) =>
     .join("");
 const claveCarrito = (turno: string) => `pos:carrito:${turno}`;
 const claveCobro = (turno: string) => `pos:cobro:${turno}`;
+const claveColaVentas = (turno: string) => `pos:cola_ventas:${turno}`;
+
+type VentaEncolada = {
+  clave: string;
+  metodo: MetodoPago;
+  lineas: { producto_id: string; nombre: string; cantidad: number; precio: number }[];
+  recibido: number | null;
+  total: number;
+  cambio: number | null;
+  cliente: Cliente | null;
+  fecha: string;
+};
+
+const pausar = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms));
 
 function leerJSON<T>(clave: string): T | null {
   try {
@@ -80,14 +94,16 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
   const [carrito, despachar] = useReducer(reducirCarrito, [] as Carrito);
   const [ventana, setVentana] = useState<Ventana>(null);
   const [aviso, setAviso] = useState<{ texto: string; tipo: "error" | "advertencia" } | null>(null);
-  const [ultimaVenta, setUltimaVenta] = useState<{ numero: number; cambio: number | null; total: number } | null>(null);
+  const [ultimaVenta, setUltimaVenta] = useState<{ numero: number | null; cambio: number | null; total: number } | null>(null);
   const [enLinea, setEnLinea] = useState(true);
   const [reporte, setReporte] = useState<DatosReporte | null>(null);
+  const [colaVentas, setColaVentas] = useState<VentaEncolada[]>([]);
+  const [sincronizandoCola, setSincronizandoCola] = useState(false);
   const hidratado = useRef(false);
   /** true después de cerrar el turno: se detienen las revisiones y se muestra solo el resultado */
   const cerrado = useRef(false);
 
-  // ── Carrito persistido por turno (sobrevive recargas) ──
+  // ── Carrito y cola de ventas persistidos por turno (sobreviven recargas y cortes) ──
   useEffect(() => {
     const guardado = leerJSON<Carrito>(claveCarrito(turnoId));
     if (guardado) {
@@ -95,11 +111,22 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
       despachar({ tipo: "reemplazar", carrito: ajustado });
     }
     hidratado.current = true;
+    const encoladas = leerJSON<VentaEncolada[]>(claveColaVentas(turnoId));
+    if (Array.isArray(encoladas) && encoladas.length > 0) {
+      const t = window.setTimeout(() => setColaVentas(encoladas), 0);
+      return () => window.clearTimeout(t);
+    }
   }, [turnoId, productosIniciales]);
 
   useEffect(() => {
     if (hidratado.current) localStorage.setItem(claveCarrito(turnoId), JSON.stringify(carrito));
   }, [carrito, turnoId]);
+
+  useEffect(() => {
+    if (!hidratado.current) return;
+    if (colaVentas.length === 0) localStorage.removeItem(claveColaVentas(turnoId));
+    else localStorage.setItem(claveColaVentas(turnoId), JSON.stringify(colaVentas));
+  }, [colaVentas, turnoId]);
 
   // ── Conexión ──
   useEffect(() => {
@@ -164,7 +191,148 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
     if (b) setUltimaVenta(null);
   }, []);
 
-  // ── Cobro (con bloqueo sincrónico contra doble toque y recuperación de colisión de clave) ──
+  /**
+   * Envía una venta a Supabase con hasta 3 intentos automáticos, refresco de sesión
+   * si el token expiró durante un turno 24/7 y recuperación ante colisión 23505.
+   */
+  const enviarVentaASupabase = useCallback(
+    async (
+      clave: string,
+      metodo: MetodoPago,
+      lineas: { producto_id: string; cantidad: number; precio: number }[],
+      recibido: number | null,
+      cliente: Cliente | null,
+    ): Promise<{ ticket: DatosTicket | null; error: { code?: string; message?: string } | null }> => {
+      const esperas = [0, 800, 1800];
+      let ultimoError: { code?: string; message?: string } | null = null;
+      let lineasActuales = lineas;
+
+      for (let intento = 0; intento < esperas.length; intento++) {
+        if (esperas[intento] > 0) await pausar(esperas[intento]);
+
+        const { data, error } = await supabase.rpc("registrar_venta", {
+          p_clave: clave,
+          p_metodo: metodo,
+          p_lineas: lineasActuales,
+          p_recibido: recibido,
+          ...(cliente && !esConsumidorFinal(cliente) ? { p_cliente: cliente } : {}),
+        });
+
+        if (!error && data) {
+          return { ticket: data as DatosTicket, error: null };
+        }
+
+        ultimoError = error;
+        if (!error) continue;
+
+        // Si el intento anterior sí llegó y chocó en la restricción única de clave (23505), recuperamos el ticket
+        if (error.code === "23505") {
+          const { data: existente } = await supabase.from("ventas").select("id").eq("clave", clave).maybeSingle();
+          if (existente?.id) {
+            const { data: recuperado } = await supabase.rpc("ticket_venta", { p_venta: existente.id });
+            if (recuperado) return { ticket: recuperado as DatosTicket, error: null };
+          }
+        }
+
+        // Si la sesión expiró tras horas de inactividad en un turno 24/7, la refrescamos y reintentamos
+        if (esErrorDeSesion(error)) {
+          await supabase.auth.refreshSession().catch(() => null);
+          continue;
+        }
+
+        // Si el admin cambió precios y la BD aún exige coincidencia estricta, conciliamos y reintentamos si cubre el total
+        if (esCodigo(error, "PRECIOS_ACTUALIZADOS")) {
+          try {
+            const vigentes = await cargarProductosVendibles(supabase);
+            setProductos(vigentes);
+            const mapaPrecios = new Map(vigentes.map((p) => [p.id, p.precio]));
+            const todasDisponibles = lineasActuales.every((l) => mapaPrecios.has(l.producto_id));
+            if (todasDisponibles) {
+              const nuevasLineas = lineasActuales.map((l) => ({
+                ...l,
+                precio: mapaPrecios.get(l.producto_id) ?? l.precio,
+              }));
+              const nuevoTotal = nuevasLineas.reduce((s, l) => s + l.cantidad * l.precio, 0);
+              if (metodo !== "efectivo" || (recibido !== null && recibido >= nuevoTotal)) {
+                lineasActuales = nuevasLineas;
+                continue;
+              }
+            }
+          } catch {
+            // Si falla la recarga, sale por el flujo normal
+          }
+          break;
+        }
+
+        // Errores de negocio definitivos no se reintentan
+        if (!esErrorDeRed(error)) break;
+      }
+
+      return { ticket: null, error: ultimoError };
+    },
+    [supabase],
+  );
+
+  // ── Sincronizador automático de la cola de ventas guardadas cuando hubo corte de red ──
+  const procesandoColaRef = useRef(false);
+  const sincronizarCola = useCallback(async (): Promise<boolean> => {
+    if (procesandoColaRef.current || cerrado.current) return false;
+    const pendientes = leerJSON<VentaEncolada[]>(claveColaVentas(turnoId)) ?? [];
+    if (pendientes.length === 0) {
+      setColaVentas([]);
+      return true;
+    }
+    procesandoColaRef.current = true;
+    setSincronizandoCola(true);
+    try {
+      const restantes = [...pendientes];
+      while (restantes.length > 0) {
+        const actual = restantes[0];
+        const { ticket, error } = await enviarVentaASupabase(
+          actual.clave,
+          actual.metodo,
+          actual.lineas.map((l) => ({ producto_id: l.producto_id, cantidad: l.cantidad, precio: l.precio })),
+          actual.recibido,
+          actual.cliente,
+        );
+        if (ticket) {
+          restantes.shift();
+          setColaVentas([...restantes]);
+          if (restantes.length === 0) localStorage.removeItem(claveColaVentas(turnoId));
+          else localStorage.setItem(claveColaVentas(turnoId), JSON.stringify(restantes));
+          continue;
+        }
+        if (error && esCodigo(error, "TURNO_CERRADO")) {
+          turnoCerradoPorOtro();
+          return false;
+        }
+        // Si sigue sin internet, conservamos el resto en la cola para el próximo intento
+        return false;
+      }
+      return true;
+    } finally {
+      procesandoColaRef.current = false;
+      setSincronizandoCola(false);
+    }
+  }, [enviarVentaASupabase, turnoId, turnoCerradoPorOtro]);
+
+  // Solo activa temporizador de reintento cuando existen ventas pendientes en la cola (0 peticiones en reposo)
+  useEffect(() => {
+    if (colaVentas.length === 0) return;
+    const inicial = window.setTimeout(() => void sincronizarCola(), 50);
+    const alVolverEnLinea = () => void sincronizarCola();
+    window.addEventListener("online", alVolverEnLinea);
+    const id = window.setInterval(() => {
+      if (navigator.onLine) void sincronizarCola();
+    }, 12_000);
+    return () => {
+      window.clearTimeout(inicial);
+      window.removeEventListener("online", alVolverEnLinea);
+      window.clearInterval(id);
+    };
+  }, [colaVentas.length, sincronizarCola]);
+
+  // ── Cobro garantizado (reintentos en caliente + cola local ante caída total de red) ──
   const cobrandoRef = useRef(false);
   async function cobrar(metodo: MetodoPago, recibido: number | null, cliente: Cliente | null): Promise<ResultadoCobro> {
     if (cobrandoRef.current) {
@@ -178,58 +346,97 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
       const clave = pendiente?.firma === firma ? pendiente.clave : nuevoUUID();
       localStorage.setItem(claveCobro(turnoId), JSON.stringify({ clave, firma }));
 
-      const { data, error } = await supabase.rpc("registrar_venta", {
-        p_clave: clave,
-        p_metodo: metodo,
-        p_lineas: carrito.map((l) => ({ producto_id: l.productoId, cantidad: l.cantidad, precio: l.precio })),
-        p_recibido: recibido,
-        // Consumidor Final no se envía: la BD lo pone por defecto
-        ...(cliente && !esConsumidorFinal(cliente) ? { p_cliente: cliente } : {}),
-      });
+      const lineasEnvio = carrito.map((l) => ({
+        producto_id: l.productoId,
+        nombre: l.nombre,
+        cantidad: l.cantidad,
+        precio: l.precio,
+      }));
+      const total = totalCarrito(carrito);
+      const montoRecibido = metodo === "efectivo" ? recibido : null;
+      const cambio = montoRecibido !== null ? montoRecibido - total : null;
 
-      let ticket = data as DatosTicket | null;
+      const { ticket, error } = await enviarVentaASupabase(
+        clave,
+        metodo,
+        lineasEnvio.map((l) => ({ producto_id: l.producto_id, cantidad: l.cantidad, precio: l.precio })),
+        montoRecibido,
+        cliente,
+      );
+
+      if (ticket) {
+        localStorage.removeItem(claveCobro(turnoId));
+        despachar({ tipo: "vaciar" });
+        imprimir({ tipo: "ticket", datos: ticket, copia: false });
+        setUltimaVenta({ numero: ticket.numero, cambio: ticket.cambio, total: ticket.total });
+        setVentana(null);
+        if (colaVentas.length > 0) void sincronizarCola();
+        return { ok: true, cambio: ticket.cambio };
+      }
 
       if (error) {
-        // Si dos peticiones simultáneas con la misma clave chocaron en la restricción única (23505),
-        // recuperamos el ticket de la venta que ya quedó guardada sin duplicarla ni mostrar error.
-        if (error.code === "23505") {
-          const { data: existente } = await supabase.from("ventas").select("id").eq("clave", clave).maybeSingle();
-          if (existente?.id) {
-            const { data: recuperado } = await supabase.rpc("ticket_venta", { p_venta: existente.id });
-            if (recuperado) ticket = recuperado as DatosTicket;
-          }
+        if (esCodigo(error, "TURNO_CERRADO")) {
+          turnoCerradoPorOtro();
+          return { ok: false, error: mensajeDeError(error), reintentable: false };
         }
-        if (!ticket) {
-          if (esCodigo(error, "TURNO_CERRADO")) {
-            turnoCerradoPorOtro();
-            return { ok: false, error: mensajeDeError(error), reintentable: false };
-          }
-          if (esCodigo(error, "PRECIOS_ACTUALIZADOS")) {
-            const cambios = await sincronizar().catch(() => null);
-            return {
-              ok: false,
-              error: `${cambios ?? "Algunos precios cambiaron"}. Revisa el total y confirma de nuevo`,
-              reintentable: false,
-            };
-          }
-          if (esErrorDeRed(error) || !navigator.onLine) {
-            return { ok: false, error: "Sin conexión. El carrito se conserva", reintentable: true };
-          }
-          return { ok: false, error: mensajeDeError(error, "No se pudo registrar la venta"), reintentable: true };
+        if (esCodigo(error, "PRECIOS_ACTUALIZADOS")) {
+          const cambios = await sincronizar().catch(() => null);
+          return {
+            ok: false,
+            error: `${cambios ?? "Algunos precios cambiaron"}. Revisa el total y confirma de nuevo`,
+            reintentable: false,
+          };
         }
+        // Si después de los 3 intentos automáticos no hay red, guardamos la venta en la cola persistente
+        // del turno para que jamás se pierda ni detenga la fila de clientes, y la subimos apenas vuelva la red.
+        if (esErrorDeRed(error) || !navigator.onLine) {
+          const nuevaEncolada: VentaEncolada = {
+            clave,
+            metodo,
+            lineas: lineasEnvio,
+            recibido: montoRecibido,
+            total,
+            cambio,
+            cliente: cliente && !esConsumidorFinal(cliente) ? cliente : null,
+            fecha: new Date().toISOString(),
+          };
+          const actuales = leerJSON<VentaEncolada[]>(claveColaVentas(turnoId)) ?? [];
+          const actualizadas = actuales.some((v) => v.clave === clave) ? actuales : [...actuales, nuevaEncolada];
+          localStorage.setItem(claveColaVentas(turnoId), JSON.stringify(actualizadas));
+          setColaVentas(actualizadas);
+
+          const clienteTicket = cliente ?? CONSUMIDOR_FINAL;
+          const ticketLocal: DatosTicket = {
+            venta_id: clave,
+            numero: 0,
+            fecha: nuevaEncolada.fecha,
+            sede: { nombre: sede, direccion: null, telefono: null },
+            cajero,
+            metodo,
+            total,
+            recibido: montoRecibido,
+            cambio,
+            cliente: { tipo: clienteTicket.tipo, documento: clienteTicket.documento, nombre: clienteTicket.nombre },
+            lineas: lineasEnvio.map((l) => ({
+              nombre: l.nombre,
+              cantidad: l.cantidad,
+              precio: l.precio,
+              subtotal: l.cantidad * l.precio,
+            })),
+          };
+
+          localStorage.removeItem(claveCobro(turnoId));
+          despachar({ tipo: "vaciar" });
+          imprimir({ tipo: "ticket", datos: ticketLocal, copia: false });
+          setUltimaVenta({ numero: null, cambio, total });
+          setVentana(null);
+          return { ok: true, cambio };
+        }
+
+        return { ok: false, error: mensajeDeError(error, "No se pudo registrar la venta"), reintentable: true };
       }
 
-      if (!ticket) {
-        return { ok: false, error: "No se pudo registrar la venta", reintentable: true };
-      }
-
-      localStorage.removeItem(claveCobro(turnoId));
-      despachar({ tipo: "vaciar" });
-      imprimir({ tipo: "ticket", datos: ticket, copia: false });
-      // Sin ventana de confirmación: vuelve a vender y el cambio queda a la vista
-      setUltimaVenta({ numero: ticket.numero, cambio: ticket.cambio, total: ticket.total });
-      setVentana(null);
-      return { ok: true, cambio: ticket.cambio };
+      return { ok: false, error: "No se pudo registrar la venta", reintentable: true };
     } finally {
       cobrandoRef.current = false;
     }
@@ -262,10 +469,20 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
   }
 
   // ── Cierre ──
-  function pedirCierre() {
+  async function pedirCierre() {
     if (carrito.length > 0) {
       setAviso({ texto: "Vacía el carrito antes de cerrar el turno", tipo: "advertencia" });
       return;
+    }
+    if (colaVentas.length > 0) {
+      const ok = await sincronizarCola();
+      if (!ok) {
+        setAviso({
+          texto: `Hay ${colaVentas.length} venta(s) pendiente(s) por subir a la nube. Verifica el internet antes de cerrar el turno.`,
+          tipo: "advertencia",
+        });
+        return;
+      }
     }
     setVentana("cierre");
   }
@@ -275,6 +492,12 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
     if (cerrandoRef.current) return null;
     cerrandoRef.current = true;
     try {
+      if (colaVentas.length > 0) {
+        const ok = await sincronizarCola();
+        if (!ok) {
+          return { error: "Aún hay ventas guardadas subiendo a la nube. Revisa la conexión e intenta de nuevo", reintentable: true };
+        }
+      }
       const { data, error } = await supabase.rpc("cerrar_turno", { p_turno: turnoId, p_contado: contado, p_a_mayor: aMayor });
       if (error) {
         if (esCodigo(error, "TURNO_CERRADO")) {
@@ -360,6 +583,21 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
             </span>
           </div>
 
+          {colaVentas.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void sincronizarCola()}
+              disabled={sincronizandoCola}
+              className="flex items-center gap-1.5 rounded-full bg-advertencia px-3 py-1.5 text-xs font-semibold text-white"
+              title="Ventas guardadas en este equipo pendientes por subir a Supabase"
+            >
+              <CloudUpload size={16} aria-hidden />
+              <span>
+                {sincronizandoCola ? "Subiendo…" : `${colaVentas.length} por sincronizar`}
+              </span>
+            </button>
+          )}
+
           {/* Solo se muestra sin conexión (con conexión no hace falta avisar) */}
           {!enLinea && (
             <span role="status" className="flex items-center gap-2 rounded-full bg-peligro px-3 py-1.5 text-xs font-semibold">
@@ -425,7 +663,7 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
             >
               <CircleCheck size={28} aria-hidden />
               <p className="flex-1 font-semibold">
-                Venta #{ultimaVenta.numero} registrada
+                {ultimaVenta.numero !== null ? `Venta #${ultimaVenta.numero} registrada` : "Venta guardada (se subirá al volver la red)"}
                 {ultimaVenta.cambio === null && " · " + formatearPesos(ultimaVenta.total)}
               </p>
               {ultimaVenta.cambio !== null && (
@@ -460,7 +698,7 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
             setUltimaVenta(null);
             setVentana("cobro");
           }}
-          cobroDeshabilitado={!enLinea || ventana === "cobro"}
+          cobroDeshabilitado={ventana === "cobro"}
         />
       </div>
 
