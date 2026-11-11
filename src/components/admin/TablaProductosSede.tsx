@@ -285,13 +285,15 @@ export function TablaProductosSede({ sedeId, tipo, filas, categorias }: Props) {
                   <EditarProducto
                     tipo={tipo}
                     categorias={categorias}
+                    sedeId={sedeId}
                     producto={{
                       id: f.productoId,
                       nombre: f.nombre,
                       categoriaId: f.categoriaId,
                       precioReferencia: f.precioReferencia,
+                      precioVenta: f.precioVenta,
                       imagenUrl: f.imagenUrl,
-                      activo: f.activo,
+                      activo: f.habilitado,
                     }}
                   />
                 </td>

@@ -17,6 +17,7 @@ export type ProductoEditable = {
   nombre: string;
   categoriaId: string | null;
   precioReferencia: number;
+  precioVenta?: number;
   imagenUrl: string | null;
   activo: boolean;
 };
@@ -135,10 +136,16 @@ function Formulario({
       </div>
 
       <Campo
-        etiqueta={producto ? "Precio de referencia" : "Precio de venta (todas las sedes)"}
+        etiqueta={
+          sedeId
+            ? "Precio de venta (esta sede)"
+            : producto
+              ? "Precio de referencia"
+              : "Precio de venta (todas las sedes)"
+        }
         name="precioReferencia"
         inputMode="numeric"
-        defaultValue={producto?.precioReferencia}
+        defaultValue={producto ? (producto.precioVenta ?? producto.precioReferencia) : undefined}
         error={c.precioReferencia}
         className="num"
         required
@@ -146,13 +153,15 @@ function Formulario({
 
       {producto && (
         <div className="flex flex-col gap-1">
-          <label className="flex min-h-12 items-center gap-3 text-sm font-medium">
-            <input type="checkbox" name="aplicarATodas" className="size-5 accent-primario" />
-            Aplicar este precio a todas las sedes
-          </label>
+          {!sedeId && (
+            <label className="flex min-h-12 items-center gap-3 text-sm font-medium">
+              <input type="checkbox" name="aplicarATodas" className="size-5 accent-primario" />
+              Aplicar este precio a todas las sedes
+            </label>
+          )}
           <label className="flex min-h-12 items-center gap-3 text-sm font-medium">
             <input type="checkbox" name="activo" defaultChecked={producto.activo} className="size-5 accent-primario" />
-            Activo (si lo apagas, desaparece de la caja en todas las sedes)
+            {sedeId ? "Activo en esta sede (no afecta otras sedes)" : "Activo (si lo apagas, desaparece de la caja en todas las sedes)"}
           </label>
         </div>
       )}
@@ -199,10 +208,12 @@ export function EditarProducto({
   tipo,
   producto,
   categorias,
+  sedeId,
 }: {
   tipo: TipoSede;
   producto: ProductoEditable;
   categorias: OpcionCategoria[];
+  sedeId?: string;
 }) {
   const [modal, setModal] = useState<"editar" | "eliminar" | null>(null);
   const [pendiente, iniciar] = useTransition();
@@ -225,7 +236,14 @@ export function EditarProducto({
 
       <Modal abierto={modal === "editar"} titulo="Editar producto" onCerrar={cerrar}>
         {modal === "editar" && (
-          <Formulario tipo={tipo} categorias={categorias} producto={producto} cerrar={cerrar} onEliminar={() => setModal("eliminar")} />
+          <Formulario
+            tipo={tipo}
+            categorias={categorias}
+            producto={producto}
+            sedeId={sedeId}
+            cerrar={cerrar}
+            onEliminar={() => setModal("eliminar")}
+          />
         )}
       </Modal>
 

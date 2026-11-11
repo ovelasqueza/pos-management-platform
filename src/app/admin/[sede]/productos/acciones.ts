@@ -124,17 +124,32 @@ export async function editarProducto(_: EstadoFormulario, f: FormData): Promise<
     imagenPath = null;
   }
 
+  const sedeId = texto(f, "sedeId");
+  // Editando desde una sede: precio y activo son SOLO de esa sede (no tocan el catálogo ni otras sedes)
   const { error } = await supabase
     .from("productos")
-    .update({
-      nombre: d.nombre,
-      categoria_id: d.categoriaId,
-      precio_referencia: d.precioReferencia,
-      imagen_path: imagenPath,
-      activo: d.activo,
-    })
+    .update(
+      sedeId
+        ? { nombre: d.nombre, categoria_id: d.categoriaId, imagen_path: imagenPath }
+        : {
+            nombre: d.nombre,
+            categoria_id: d.categoriaId,
+            precio_referencia: d.precioReferencia,
+            imagen_path: imagenPath,
+            activo: d.activo,
+          },
+    )
     .eq("id", d.id);
   if (error) return errorProducto(error);
+
+  if (sedeId) {
+    const { error: errorSede } = await supabase
+      .from("productos_sede")
+      .update({ precio_venta: d.precioReferencia, habilitado: d.activo })
+      .eq("sede_id", sedeId)
+      .eq("producto_id", d.id);
+    if (errorSede) return { error: mensajeDeError(errorSede) };
+  }
 
   // Borra la imagen anterior si fue reemplazada o quitada
   if (actual.imagen_path && actual.imagen_path !== imagenPath) {
