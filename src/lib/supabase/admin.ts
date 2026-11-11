@@ -9,7 +9,7 @@ import { SUPABASE_URL } from "./config";
  */
 export function crearClienteAdmin() {
   const clave = process.env.SUPABASE_SECRET_KEY;
-  if (!clave) throw new Error("Falta SUPABASE_SECRET_KEY (ver .env.example)");
+  if (!clave) throw new Error("Falta configurar la variable SUPABASE_SECRET_KEY en Cloudflare (Workers > Configuración > Variables y secretos)");
 
   return createClient(SUPABASE_URL, clave, {
     auth: { persistSession: false, autoRefreshToken: false },
