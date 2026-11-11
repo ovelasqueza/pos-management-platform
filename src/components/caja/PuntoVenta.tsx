@@ -775,7 +775,13 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
         />
       </div>
 
-      <PanelVentas abierto={ventana === "ventas"} turnoId={turnoId} onCerrar={() => setVentana(null)} onTurnoCerrado={turnoCerradoPorOtro} />
+      <PanelVentas
+        abierto={ventana === "ventas"}
+        turnoId={turnoId}
+        colaVentas={colaVentas}
+        onCerrar={() => setVentana(null)}
+        onTurnoCerrado={turnoCerradoPorOtro}
+      />
       <PanelGastos abierto={ventana === "gastos"} turnoId={turnoId} onCerrar={() => setVentana(null)} onTurnoCerrado={turnoCerradoPorOtro} />
       <CierreTurno abierto={ventana === "cierre"} onCerrar={() => setVentana(null)} onConfirmar={cerrarTurno} />
 

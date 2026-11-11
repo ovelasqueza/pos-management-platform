@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Ban, Printer, RotateCw } from "lucide-react";
+import { Ban, Package, Printer, Receipt, RotateCw, Search } from "lucide-react";
 import { crearClienteNavegador } from "@/lib/supabase/browser";
 import { formatearPesos } from "@/lib/dominio/dinero";
 import { formatearHora } from "@/lib/dominio/fechas";
 import { nombreMetodo, type MetodoPago } from "@/lib/dominio/cobro";
+import { normalizarTexto } from "@/lib/dominio/producto";
 import { esCodigo, esErrorDeRed, mensajeDeError } from "@/lib/dominio/errores";
 import type { DatosTicket } from "@/lib/dominio/documentos";
 import { Modal } from "@/components/ui/Modal";
@@ -14,7 +15,14 @@ import { Boton } from "@/components/ui/Boton";
 import { Campo } from "@/components/ui/Campo";
 import { useImprimir } from "@/components/impresion/ProveedorImpresion";
 
-type Venta = {
+export type LineaVentaDB = {
+  producto_id: string;
+  nombre: string;
+  precio: number;
+  cantidad: number;
+};
+
+export type Venta = {
   id: string;
   numero: number;
   creado_en: string;
@@ -23,13 +31,34 @@ type Venta = {
   /** Script 18; null si la venta está vigente */
   anulada_en?: string | null;
   motivo_anulacion?: string | null;
+  lineas_venta?: LineaVentaDB[] | null;
 };
 
-type Props = { abierto: boolean; turnoId: string; onCerrar: () => void; onTurnoCerrado: () => void };
+export type LineaVentaSimple = {
+  producto_id: string;
+  nombre: string;
+  precio: number;
+  cantidad: number;
+};
 
-export function PanelVentas({ abierto, turnoId, onCerrar, onTurnoCerrado }: Props) {
+export type VentaEncoladaSimple = {
+  clave: string;
+  lineas: LineaVentaSimple[];
+};
+
+type Props = {
+  abierto: boolean;
+  turnoId: string;
+  colaVentas?: VentaEncoladaSimple[];
+  onCerrar: () => void;
+  onTurnoCerrado: () => void;
+};
+
+export function PanelVentas({ abierto, turnoId, colaVentas, onCerrar, onTurnoCerrado }: Props) {
   const supabase = useMemo(() => crearClienteNavegador(), []);
   const imprimir = useImprimir();
+  const [pestana, setPestana] = useState<"productos" | "tickets">("productos");
+  const [busqueda, setBusqueda] = useState("");
   const [ventas, setVentas] = useState<Venta[] | null>(null);
   const [error, setError] = useState<string>();
   const [imprimiendo, setImprimiendo] = useState<string | null>(null);
@@ -40,29 +69,62 @@ export function PanelVentas({ abierto, turnoId, onCerrar, onTurnoCerrado }: Prop
   const enviandoRef = useRef(false);
 
   const consultar = useCallback(async () => {
+    // Intenta traer ventas con lineas_venta y motivo_anulacion
     const r = await supabase
       .from("ventas")
-      .select("id, numero, creado_en, total, metodo, anulada_en, motivo_anulacion")
+      .select("id, numero, creado_en, total, metodo, anulada_en, motivo_anulacion, lineas_venta(producto_id, nombre, precio, cantidad)")
       .eq("turno_id", turnoId)
-      .order("creado_en", { ascending: false })
-      .returns<Venta[]>();
-    // Respaldo mientras no se ejecute el script 18 (sin columnas de anulación)
+      .order("creado_en", { ascending: false });
+
+    if (!r.error) return r;
+
+    // Respaldo 1: si no existen las columnas de anulación
     if (r.error?.code === "42703") {
-      return supabase
+      const r2 = await supabase
         .from("ventas")
-        .select("id, numero, creado_en, total, metodo")
+        .select("id, numero, creado_en, total, metodo, lineas_venta(producto_id, nombre, precio, cantidad)")
         .eq("turno_id", turnoId)
-        .order("creado_en", { ascending: false })
-        .returns<Venta[]>();
+        .order("creado_en", { ascending: false });
+      if (!r2.error) return r2;
     }
-    return r;
+
+    // Respaldo 2: consulta las ventas y sus líneas por separado
+    const { data: ventasBasicas, error: errorBasicas } = await supabase
+      .from("ventas")
+      .select("id, numero, creado_en, total, metodo")
+      .eq("turno_id", turnoId)
+      .order("creado_en", { ascending: false });
+
+    if (errorBasicas || !ventasBasicas) return { data: null, error: errorBasicas };
+
+    const ids = ventasBasicas.map((v) => v.id);
+    if (ids.length === 0) return { data: [], error: null };
+
+    const { data: lineas } = await supabase
+      .from("lineas_venta")
+      .select("venta_id, producto_id, nombre, precio, cantidad")
+      .in("venta_id", ids);
+
+    const porVenta = new Map<string, LineaVentaDB[]>();
+    for (const l of (lineas ?? []) as (LineaVentaDB & { venta_id: string })[]) {
+      const arr = porVenta.get(l.venta_id) ?? [];
+      arr.push({ producto_id: l.producto_id, nombre: l.nombre, precio: l.precio, cantidad: l.cantidad });
+      porVenta.set(l.venta_id, arr);
+    }
+
+    const resultado: Venta[] = ventasBasicas.map((v) => ({
+      ...v,
+      lineas_venta: porVenta.get(v.id) ?? [],
+    }));
+
+    return { data: resultado, error: null };
   }, [supabase, turnoId]);
 
   const aplicar = useCallback((r: Awaited<ReturnType<typeof consultar>>) => {
     if (r.error) setError("No se pudieron cargar las ventas");
     else {
       setError(undefined);
-      setVentas(r.data);
+      setVentas(r.data as Venta[]);
     }
   }, []);
 
@@ -70,6 +132,7 @@ export function PanelVentas({ abierto, turnoId, onCerrar, onTurnoCerrado }: Prop
 
   useEffect(() => {
     if (!abierto) return;
+    setBusqueda("");
     let vigente = true;
     consultar().then((r) => vigente && aplicar(r));
     return () => {
@@ -119,9 +182,61 @@ export function PanelVentas({ abierto, turnoId, onCerrar, onTurnoCerrado }: Prop
     }
   }
 
-  const vigentes = ventas?.filter((v) => !v.anulada_en) ?? [];
-  const total = vigentes.reduce((s, v) => s + v.total, 0);
+  const vigentes = useMemo(() => ventas?.filter((v) => !v.anulada_en) ?? [], [ventas]);
+  const total = useMemo(() => vigentes.reduce((s, v) => s + v.total, 0), [vigentes]);
   const anuladas = (ventas?.length ?? 0) - vigentes.length;
+
+  // ── Agrupación de productos vendidos hasta el momento ──
+  const resumenProductos = useMemo(() => {
+    const mapa = new Map<string, { id: string; nombre: string; unidades: number; total: number }>();
+
+    // 1. De las ventas válidas (no anuladas) en base de datos
+    for (const v of vigentes) {
+      for (const l of v.lineas_venta ?? []) {
+        const clave = l.producto_id || l.nombre;
+        const actual = mapa.get(clave) ?? { id: l.producto_id, nombre: l.nombre, unidades: 0, total: 0 };
+        actual.unidades += l.cantidad;
+        actual.total += l.cantidad * l.precio;
+        mapa.set(clave, actual);
+      }
+    }
+
+    // 2. De las ventas locales en cola (offline) que aún no estén en ventas de la BD
+    const clavesBD = new Set(ventas?.map((v) => v.id) ?? []);
+    for (const cv of colaVentas ?? []) {
+      if (clavesBD.has(cv.clave)) continue;
+      for (const l of cv.lineas ?? []) {
+        const clave = l.producto_id || l.nombre;
+        const actual = mapa.get(clave) ?? { id: l.producto_id, nombre: l.nombre, unidades: 0, total: 0 };
+        actual.unidades += l.cantidad;
+        actual.total += l.cantidad * l.precio;
+        mapa.set(clave, actual);
+      }
+    }
+
+    const lista = Array.from(mapa.values()).map((p) => ({
+      ...p,
+      precioPromedio: p.unidades > 0 ? Math.round(p.total / p.unidades) : 0,
+    }));
+
+    return lista.sort((a, b) => b.unidades - a.unidades || b.total - a.total);
+  }, [vigentes, ventas, colaVentas]);
+
+  const totalUnidades = useMemo(
+    () => resumenProductos.reduce((s, p) => s + p.unidades, 0),
+    [resumenProductos],
+  );
+
+  const totalDineroProductos = useMemo(
+    () => resumenProductos.reduce((s, p) => s + p.total, 0),
+    [resumenProductos],
+  );
+
+  const productosFiltrados = useMemo(() => {
+    const q = normalizarTexto(busqueda);
+    if (!q) return resumenProductos;
+    return resumenProductos.filter((p) => normalizarTexto(p.nombre).includes(q));
+  }, [resumenProductos, busqueda]);
 
   return (
     <>
@@ -138,7 +253,113 @@ export function PanelVentas({ abierto, turnoId, onCerrar, onTurnoCerrado }: Prop
               {error}
             </Aviso>
           )}
-          {ventas && (
+
+          {/* Selector de pestañas: Productos vendidos vs Historial de tickets */}
+          <div className="flex gap-1 rounded-tarjeta bg-suave p-1" role="tablist" aria-label="Vista de ventas">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={pestana === "productos"}
+              onClick={() => setPestana("productos")}
+              className={`flex min-h-10 flex-1 items-center justify-center gap-2 rounded-control px-3 text-sm font-semibold transition-colors ${
+                pestana === "productos"
+                  ? "border border-borde bg-superficie text-texto shadow-sm"
+                  : "text-texto-3 hover:text-texto"
+              }`}
+            >
+              <Package size={16} aria-hidden />
+              <span>Productos vendidos</span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                  pestana === "productos" ? "bg-primario text-white" : "bg-borde text-texto-2"
+                }`}
+              >
+                {totalUnidades} u.
+              </span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={pestana === "tickets"}
+              onClick={() => setPestana("tickets")}
+              className={`flex min-h-10 flex-1 items-center justify-center gap-2 rounded-control px-3 text-sm font-semibold transition-colors ${
+                pestana === "tickets"
+                  ? "border border-borde bg-superficie text-texto shadow-sm"
+                  : "text-texto-3 hover:text-texto"
+              }`}
+            >
+              <Receipt size={16} aria-hidden />
+              <span>Historial tickets</span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                  pestana === "tickets" ? "bg-primario text-white" : "bg-borde text-texto-2"
+                }`}
+              >
+                {vigentes.length}
+              </span>
+            </button>
+          </div>
+
+          {ventas && pestana === "productos" && (
+            <div className="flex flex-col gap-3">
+              {/* Tarjetas de totales */}
+              <div className="grid grid-cols-2 gap-2 rounded-tarjeta border border-borde bg-suave p-3 text-center">
+                <div>
+                  <p className="text-xs font-semibold uppercase text-texto-3">Total unidades</p>
+                  <p className="num text-2xl font-bold text-texto">{totalUnidades} u.</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase text-texto-3">Total vendido</p>
+                  <p className="num text-2xl font-bold text-primario-activo">
+                    {formatearPesos(totalDineroProductos || total)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Buscador de producto */}
+              {resumenProductos.length > 5 && (
+                <div className="relative">
+                  <Search size={16} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-texto-3" aria-hidden />
+                  <input
+                    type="search"
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    placeholder="Buscar producto vendido…"
+                    className="min-h-10 w-full rounded-control border border-borde-activo bg-superficie pr-3 pl-9 text-sm focus:border-primario focus:outline-none"
+                  />
+                </div>
+              )}
+
+              {/* Listado de productos vendidos */}
+              <div className="max-h-[50vh] divide-y divide-suave overflow-y-auto rounded-tarjeta border border-borde bg-superficie">
+                {productosFiltrados.map((p) => (
+                  <div key={p.id || p.nombre} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold text-texto">{p.nombre}</p>
+                      <p className="text-xs text-texto-3">
+                        {formatearPesos(p.precioPromedio)} c/u
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 text-right">
+                      <span className="rounded-control bg-suave px-2.5 py-1 text-sm font-bold text-texto">
+                        {p.unidades} {p.unidades === 1 ? "ud" : "uds"}
+                      </span>
+                      <span className="num min-w-[5rem] font-bold text-texto">
+                        {formatearPesos(p.total)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {productosFiltrados.length === 0 && (
+                  <p className="py-6 text-center text-sm text-texto-3">
+                    {busqueda ? "Sin coincidencias" : "Aún no se han vendido productos en este turno"}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {ventas && pestana === "tickets" && (
             <>
               <p className="flex justify-between text-sm text-texto-3">
                 <span>
@@ -146,11 +367,11 @@ export function PanelVentas({ abierto, turnoId, onCerrar, onTurnoCerrado }: Prop
                 </span>
                 <span className="num font-semibold text-texto">{formatearPesos(total)}</span>
               </p>
-              <ul className="max-h-[60vh] divide-y divide-suave overflow-y-auto">
+              <ul className="max-h-[50vh] divide-y divide-suave overflow-y-auto">
                 {ventas.map((v) => (
                   <li key={v.id} className={`flex items-center gap-3 py-1 ${v.anulada_en ? "text-texto-3" : ""}`}>
                     <span className={`num w-14 font-semibold ${v.anulada_en ? "line-through" : ""}`}>#{v.numero}</span>
-                    <span className="num w-24 shrink-0 text-sm whitespace-nowrap text-texto-3">{formatearHora(v.creado_en)}</span>
+                    <span className="num w-24 shrink-0 whitespace-nowrap text-sm text-texto-3">{formatearHora(v.creado_en)}</span>
                     <span className="min-w-0 flex-1 text-sm text-texto-2">
                       {nombreMetodo(v.metodo)}
                       {v.anulada_en && (
