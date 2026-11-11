@@ -1,7 +1,7 @@
-/** Nombre del software. Cuando tengas el nombre de la empresa, cámbialo solo aquí. */
+/** Nombre del software. */
 export const MARCA = {
-  nombre: "VENTAS · FACTURACIÓN · CONTROL",
-  corto: "Ventas",
+  nombre: "PuntoCloud Ventas POS",
+  corto: "PuntoCloud",
   descripcion: "Punto de venta multisede: caja, cobro, turnos y reportes",
   icono: "/iconos/icono-192.png",
 } as const;

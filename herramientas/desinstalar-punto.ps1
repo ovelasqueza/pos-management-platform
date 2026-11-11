@@ -1,7 +1,7 @@
 ﻿# Desinstala el Punto de Venta (POS) y el agente del cajón de este equipo.
 
 param(
-  [string]$NombreApp = "Punto de Venta POS"
+  [string]$NombreApp = "PuntoCloud Ventas POS"
 )
 
 $ErrorActionPreference = 'Continue'

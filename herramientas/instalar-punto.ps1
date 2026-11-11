@@ -4,7 +4,7 @@
 
 param(
   [string]$Url = "https://pos.puntocloud.com.co/caja",
-  [string]$NombreApp = "Punto de Venta POS",
+  [string]$NombreApp = "PuntoCloud Ventas POS",
   [int]$Puerto = 17777,
   [ValidateSet(2, 5)][int]$Pin = 2
 )
