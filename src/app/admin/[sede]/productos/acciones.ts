@@ -26,7 +26,7 @@ async function subirImagen(supabase: Cliente, tipo: string, productoId: string, 
   const path = `${tipo}/${productoId}-${Date.now()}.${EXTENSION[img.type]}`;
   const { error } = await supabase.storage
     .from("productos")
-    .upload(path, img, { contentType: img.type, upsert: false });
+    .upload(path, img, { contentType: img.type, cacheControl: "31536000", upsert: false });
   return error ? null : path;
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { memo, useMemo, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
 import { formatearPesos } from "@/lib/dominio/dinero";
 import { normalizarTexto } from "@/lib/dominio/producto";
@@ -13,21 +13,58 @@ type Props = {
   onTocar: (p: ProductoVendible) => void;
   /** Avisa al padre cuando se empieza/termina de buscar (para ocultar el aviso de venta) */
   onBuscando?: (buscando: boolean) => void;
+  oculto?: boolean;
 };
+
+/** Tarjeta individual memoizada: al agregar un producto al carrito solo se repinta esa tarjeta. */
+const TarjetaProducto = memo(function TarjetaProducto({
+  producto,
+  cantidad,
+  onTocar,
+}: {
+  producto: ProductoVendible;
+  cantidad: number | undefined;
+  onTocar: (p: ProductoVendible) => void;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => onTocar(producto)}
+        className={`relative flex h-full min-h-36 w-full flex-col items-center justify-between gap-1 rounded-tarjeta border bg-superficie p-2 text-center active:bg-suave ${
+          cantidad ? "border-primario ring-1 ring-primario" : "border-borde hover:border-borde-activo"
+        }`}
+      >
+        {cantidad && (
+          <span className="num absolute top-1 right-1 flex min-w-6 items-center justify-center rounded-full bg-primario px-1.5 text-xs font-bold text-white">
+            {cantidad}
+          </span>
+        )}
+        <MiniaturaProducto nombre={producto.nombre} url={producto.imagenUrl} tamano={80} />
+        <span className="line-clamp-2 text-sm leading-tight font-semibold">{producto.nombre}</span>
+        <span className="num text-base font-semibold">{formatearPesos(producto.precio)}</span>
+      </button>
+    </li>
+  );
+});
 
 /**
  * Productos para vender. Ocupa exactamente el alto disponible: la página no se mueve,
  * solo la lista de productos se desplaza por dentro.
- * Las categorías van arriba como cuadros pequeños que se acomodan en varias filas (todas visibles).
- * En pantallas táctiles el teclado tapa media pantalla: mientras se busca (campo enfocado o con
- * texto) las categorías se ocultan para que se vean los productos filtrados.
+ * Se mantiene montada durante el cobro (oculta con CSS) para no destruir ni recargar las imágenes.
  */
-export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando }: Props) {
+export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando, oculto = false }: Props) {
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState<string | null>(null);
   const [enfocado, setEnfocado] = useState(false);
   const campo = useRef<HTMLInputElement>(null);
   const buscando = enfocado || busqueda.trim() !== "";
+
+  // Índice de búsqueda precalculado una sola vez cuando cambia el catálogo
+  const productosIndexados = useMemo(
+    () => productos.map((p) => ({ producto: p, texto: normalizarTexto(p.nombre) })),
+    [productos],
+  );
 
   // Solo categorías que tienen productos vendibles
   const categorias = useMemo(() => {
@@ -41,9 +78,9 @@ export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando
   const visibles = useMemo(() => {
     const q = normalizarTexto(busqueda);
     // Al buscar se ignora la categoría: encuentra el producto esté donde esté
-    if (q) return productos.filter((p) => normalizarTexto(p.nombre).includes(q));
+    if (q) return productosIndexados.filter((x) => x.texto.includes(q)).map((x) => x.producto);
     return categoriaActiva ? productos.filter((p) => p.categoriaId === categoriaActiva) : productos;
-  }, [productos, busqueda, categoriaActiva]);
+  }, [productos, productosIndexados, busqueda, categoriaActiva]);
 
   const chip = (activo: boolean) =>
     `flex min-h-10 items-center justify-center rounded-control border px-2 text-center text-xs leading-tight font-semibold ${
@@ -56,7 +93,7 @@ export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando
   };
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+    <div className={oculto ? "hidden" : "flex min-h-0 min-w-0 flex-1 flex-col gap-2"} aria-hidden={oculto || undefined}>
       <div className="relative shrink-0">
         <label htmlFor="buscar-producto" className="sr-only">
           Buscar producto
@@ -124,29 +161,9 @@ export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando
       )}
 
       <ul className="barra-fina grid min-h-0 flex-1 auto-rows-min grid-cols-3 gap-2 overflow-y-auto pr-1 pb-1 sm:grid-cols-4 lg:grid-cols-5">
-        {visibles.map((p) => {
-          const cant = cantidades.get(p.id);
-          return (
-            <li key={p.id}>
-              <button
-                type="button"
-                onClick={() => onTocar(p)}
-                className={`relative flex h-full min-h-36 w-full flex-col items-center justify-between gap-1 rounded-tarjeta border bg-superficie p-2 text-center active:bg-suave ${
-                  cant ? "border-primario ring-1 ring-primario" : "border-borde hover:border-borde-activo"
-                }`}
-              >
-                {cant && (
-                  <span className="num absolute top-1 right-1 flex min-w-6 items-center justify-center rounded-full bg-primario px-1.5 text-xs font-bold text-white">
-                    {cant}
-                  </span>
-                )}
-                <MiniaturaProducto nombre={p.nombre} url={p.imagenUrl} tamano={80} />
-                <span className="line-clamp-2 text-sm leading-tight font-semibold">{p.nombre}</span>
-                <span className="num text-base font-semibold">{formatearPesos(p.precio)}</span>
-              </button>
-            </li>
-          );
-        })}
+        {visibles.map((p) => (
+          <TarjetaProducto key={p.id} producto={p} cantidad={cantidades.get(p.id)} onTocar={onTocar} />
+        ))}
         {visibles.length === 0 && <li className="col-span-full py-10 text-center text-texto-3">Sin productos</li>}
       </ul>
     </div>

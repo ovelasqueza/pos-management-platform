@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Ban, Inbox, Landmark, Plus } from "lucide-react";
 import { crearClienteNavegador } from "@/lib/supabase/browser";
 import { formatearPesos, leerPesos } from "@/lib/dominio/dinero";
@@ -73,6 +73,7 @@ export function PanelGastos({ abierto, turnoId, onCerrar, onTurnoCerrado }: Prop
   const [saldo, setSaldo] = useState<Saldo | null>(null);
   const [errores, setErrores] = useState<{ monto?: string; descripcion?: string; mayor?: string; general?: string }>({});
   const [enviando, setEnviando] = useState(false);
+  const enviandoRef = useRef(false);
   const [anulando, setAnulando] = useState<Gasto | null>(null);
 
   const consultar = useCallback(
@@ -125,6 +126,7 @@ export function PanelGastos({ abierto, turnoId, onCerrar, onTurnoCerrado }: Prop
 
   async function registrar(e: FormEvent) {
     e.preventDefault();
+    if (enviandoRef.current) return;
     const valor = leerPesos(monto);
     const nuevos: typeof errores = {};
     if (valor === null) nuevos.monto = "Monto mayor que 0";
@@ -138,30 +140,41 @@ export function PanelGastos({ abierto, turnoId, onCerrar, onTurnoCerrado }: Prop
     setErrores(nuevos);
     if (Object.keys(nuevos).length > 0 || valor === null || !reparto?.ok) return;
 
+    enviandoRef.current = true;
     setEnviando(true);
-    const { error } = await supabase.rpc("registrar_gasto", {
-      p_monto: valor,
-      p_descripcion: descripcion.trim(),
-      p_mayor_efectivo: reparto.mayor.efectivo,
-      p_mayor_transferencia: reparto.mayor.transferencia,
-      p_mayor_tarjeta: reparto.mayor.tarjeta,
-    });
-    setEnviando(false);
-    if (error) return manejarError(error);
-    setMonto("");
-    setDescripcion("");
-    setPartes(PARTES_VACIAS);
-    setOrigen("caja");
-    void cargar();
+    try {
+      const { error } = await supabase.rpc("registrar_gasto", {
+        p_monto: valor,
+        p_descripcion: descripcion.trim(),
+        p_mayor_efectivo: reparto.mayor.efectivo,
+        p_mayor_transferencia: reparto.mayor.transferencia,
+        p_mayor_tarjeta: reparto.mayor.tarjeta,
+      });
+      if (error) return manejarError(error);
+      setMonto("");
+      setDescripcion("");
+      setPartes(PARTES_VACIAS);
+      setOrigen("caja");
+      void cargar();
+    } finally {
+      enviandoRef.current = false;
+      setEnviando(false);
+    }
   }
 
   async function anular(g: Gasto) {
+    if (enviandoRef.current) return;
+    enviandoRef.current = true;
     setEnviando(true);
-    const { error } = await supabase.rpc("anular_gasto", { p_gasto: g.id });
-    setEnviando(false);
-    setAnulando(null);
-    if (error) return manejarError(error);
-    void cargar();
+    try {
+      const { error } = await supabase.rpc("anular_gasto", { p_gasto: g.id });
+      setAnulando(null);
+      if (error) return manejarError(error);
+      void cargar();
+    } finally {
+      enviandoRef.current = false;
+      setEnviando(false);
+    }
   }
 
   const vigentes = gastos.filter((g) => !g.anulado_en);

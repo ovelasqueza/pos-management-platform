@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Landmark, Lock, RotateCw } from "lucide-react";
 import { formatearPesos } from "@/lib/dominio/dinero";
 import { envioValido, quedaEnCaja } from "@/lib/dominio/cajaMayor";
@@ -27,6 +27,7 @@ export function CierreTurno({ abierto, onCerrar, onConfirmar }: Props) {
   const [aMayor, setAMayor] = useState("");
   const [paso, setPaso] = useState<Paso>("contar");
   const [enviando, setEnviando] = useState(false);
+  const enviandoRef = useRef(false);
   const [error, setError] = useState<{ error: string; reintentable: boolean } | null>(null);
 
   const valorContado = Number(contado);
@@ -34,19 +35,24 @@ export function CierreTurno({ abierto, onCerrar, onConfirmar }: Props) {
   const envioOk = envioValido(valorContado, valorMayor);
 
   function cerrar() {
-    if (enviando) return;
+    if (enviando || enviandoRef.current) return;
     setPaso("contar");
     setError(null);
     onCerrar();
   }
 
   async function confirmar() {
-    if (!envioOk) return;
+    if (!envioOk || enviandoRef.current) return;
+    enviandoRef.current = true;
     setEnviando(true);
     setError(null);
-    const r = await onConfirmar(valorContado, valorMayor);
-    setEnviando(false);
-    if (r) setError(r); // se conserva lo escrito para reintentar
+    try {
+      const r = await onConfirmar(valorContado, valorMayor);
+      if (r) setError(r); // se conserva lo escrito para reintentar
+    } finally {
+      enviandoRef.current = false;
+      setEnviando(false);
+    }
   }
 
   return (

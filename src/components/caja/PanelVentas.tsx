@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Ban, Printer, RotateCw } from "lucide-react";
 import { crearClienteNavegador } from "@/lib/supabase/browser";
 import { formatearPesos } from "@/lib/dominio/dinero";
@@ -37,6 +37,7 @@ export function PanelVentas({ abierto, turnoId, onCerrar, onTurnoCerrado }: Prop
   const [motivo, setMotivo] = useState("");
   const [errorMotivo, setErrorMotivo] = useState<string>();
   const [enviando, setEnviando] = useState(false);
+  const enviandoRef = useRef(false);
 
   const consultar = useCallback(async () => {
     const r = await supabase
@@ -92,25 +93,30 @@ export function PanelVentas({ abierto, turnoId, onCerrar, onTurnoCerrado }: Prop
 
   async function anular(e: FormEvent) {
     e.preventDefault();
-    if (!anulando) return;
+    if (!anulando || enviandoRef.current) return;
     const texto = motivo.trim();
     if (!texto) return setErrorMotivo("Escribe el motivo");
 
+    enviandoRef.current = true;
     setEnviando(true);
-    const { data, error: err } = await supabase.rpc("anular_venta", { p_venta: anulando.id, p_motivo: texto });
-    setEnviando(false);
-    if (err) {
-      if (esCodigo(err, "TURNO_CERRADO")) {
-        setAnulando(null);
-        return onTurnoCerrado();
+    try {
+      const { data, error: err } = await supabase.rpc("anular_venta", { p_venta: anulando.id, p_motivo: texto });
+      if (err) {
+        if (esCodigo(err, "TURNO_CERRADO")) {
+          setAnulando(null);
+          return onTurnoCerrado();
+        }
+        const red = esErrorDeRed(err) || !navigator.onLine;
+        return setErrorMotivo(red ? "Sin conexión. Intenta de nuevo" : mensajeDeError(err, "No se pudo anular"));
       }
-      const red = esErrorDeRed(err) || !navigator.onLine;
-      return setErrorMotivo(red ? "Sin conexión. Intenta de nuevo" : mensajeDeError(err, "No se pudo anular"));
+      setAnulando(null);
+      // Comprobante de la anulación: el ticket con la marca ANULADA y el motivo
+      imprimir({ tipo: "ticket", datos: data as DatosTicket, copia: false });
+      void cargar();
+    } finally {
+      enviandoRef.current = false;
+      setEnviando(false);
     }
-    setAnulando(null);
-    // Comprobante de la anulación: el ticket con la marca ANULADA y el motivo
-    imprimir({ tipo: "ticket", datos: data as DatosTicket, copia: false });
-    void cargar();
   }
 
   const vigentes = ventas?.filter((v) => !v.anulada_en) ?? [];

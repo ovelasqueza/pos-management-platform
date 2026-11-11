@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import Image from "next/image";
 import { Banknote, CreditCard, Delete, Pencil, QrCode, RotateCw, UserRound, X, type LucideIcon } from "lucide-react";
 import { formatearPesos } from "@/lib/dominio/dinero";
 import { calcularEfectivo, type MetodoPago } from "@/lib/dominio/cobro";
@@ -55,6 +54,7 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
   const [metodo, setMetodo] = useState<MetodoPago>("efectivo");
   const [recibido, setRecibido] = useState(0);
   const [enviando, setEnviando] = useState(false);
+  const enviandoRef = useRef(false);
   const [error, setError] = useState<{ texto: string; reintentable: boolean; recibido: number | null } | null>(null);
   const [porConfirmar, setPorConfirmar] = useState<{ metodo: MetodoPago; monto: number | null } | null>(null);
   const [cliente, setCliente] = useState<Cliente>(CONSUMIDOR_FINAL);
@@ -64,18 +64,23 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
 
   /** Todos los botones de cobro piden confirmación primero. */
   function confirmar(m: MetodoPago, monto: number | null) {
-    if (enviando) return;
+    if (enviandoRef.current || enviando) return;
     setPorConfirmar({ metodo: m, monto });
   }
 
   async function ejecutar(m: MetodoPago, monto: number | null) {
-    if (enviando) return;
+    if (enviandoRef.current) return;
+    enviandoRef.current = true;
     setPorConfirmar(null);
     setEnviando(true);
     setError(null);
-    const r = await onConfirmar(m, monto, esConsumidorFinal(cliente) ? null : cliente);
-    setEnviando(false);
-    if (!r.ok) setError({ texto: r.error, reintentable: r.reintentable, recibido: monto });
+    try {
+      const r = await onConfirmar(m, monto, esConsumidorFinal(cliente) ? null : cliente);
+      if (!r.ok) setError({ texto: r.error, reintentable: r.reintentable, recibido: monto });
+    } finally {
+      enviandoRef.current = false;
+      setEnviando(false);
+    }
   }
 
   // Enter = confirmar el cobro pendiente; Escape = cancelar la confirmación o volver a la venta
@@ -239,8 +244,15 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
                   aria-label={`Billete de ${miles(valor)}`}
                   className={`flex min-h-0 flex-col items-center gap-1 p-2 ${tarjeta}`}
                 >
-                  <span className="relative min-h-0 w-full flex-1">
-                    <Image src={`/billetes/${valor}_new.webp`} alt="" fill sizes="20vw" className="object-contain" />
+                  <span className="relative flex min-h-0 w-full flex-1 items-center justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- WebP local cacheado por el Service Worker */}
+                    <img
+                      src={`/billetes/${valor}_new.webp`}
+                      alt=""
+                      decoding="async"
+                      draggable={false}
+                      className="max-h-full max-w-full select-none object-contain"
+                    />
                   </span>
                   <span className="num shrink-0 text-lg font-bold">${miles(valor)}</span>
                 </button>
@@ -276,8 +288,17 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
                   aria-label={`Moneda de ${miles(valor)}`}
                   className={`flex flex-col items-center gap-1 p-2 ${tarjeta}`}
                 >
-                  <span className="relative size-12">
-                    <Image src={`/billetes/moneda-${valor}.webp`} alt="" fill sizes="48px" className="object-contain" />
+                  <span className="relative flex size-12 items-center justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- WebP local cacheado por el Service Worker */}
+                    <img
+                      src={`/billetes/moneda-${valor}.webp`}
+                      alt=""
+                      width={48}
+                      height={48}
+                      decoding="async"
+                      draggable={false}
+                      className="size-12 select-none object-contain"
+                    />
                   </span>
                   <span className="num text-sm font-bold">${miles(valor)}</span>
                 </button>

@@ -50,9 +50,7 @@ type CajaTurno = {
   }[];
 };
 
-const REFRESCO_MS = 30_000;
-
-/** Cómo va la caja de un turno abierto: se actualiza sola cada 30 s mientras está abierta. */
+/** Cómo va la caja de un turno abierto: carga al abrir y cuando el usuario pulsa Actualizar. */
 export function VerCaja({ turnoId, cerrar }: { turnoId: string; cerrar: () => void }) {
   const supabase = useMemo(() => crearClienteNavegador(), []);
   const [caja, setCaja] = useState<CajaTurno | null>(null);
@@ -69,13 +67,8 @@ export function VerCaja({ turnoId, cerrar }: { turnoId: string; cerrar: () => vo
   }, [supabase, turnoId]);
 
   useEffect(() => {
-    // Primera carga y refresco periódico (asíncronos: no bloquean el render)
     const primera = setTimeout(cargar, 0);
-    const id = setInterval(cargar, REFRESCO_MS);
-    return () => {
-      clearTimeout(primera);
-      clearInterval(id);
-    };
+    return () => clearTimeout(primera);
   }, [cargar]);
 
   return (

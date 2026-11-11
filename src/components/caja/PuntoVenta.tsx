@@ -43,8 +43,6 @@ type Props = {
 
 type Ventana = "cobro" | "ventas" | "gastos" | "cierre" | "salir" | null;
 
-const REFRESCO_MS = 30_000;
-
 /** Texto del botón Cajón según el resultado: "papel" = el agente no respondió y se imprimió la página mínima. */
 const TEXTO_CAJON = {
   listo: "Cajón",
@@ -145,30 +143,6 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
     return partes.join(". ");
   }, [supabase]);
 
-  // ── Refresco periódico: productos (≤ 60 s) y estado del turno ──
-  useEffect(() => {
-    async function tick() {
-      if (cerrado.current) return;
-      if (document.visibilityState !== "visible") return;
-      try {
-        const [cambios, turno] = await Promise.all([
-          sincronizar(),
-          supabase.from("turnos").select("cerrado_en").eq("id", turnoId).maybeSingle(),
-        ]);
-        if (turno.data?.cerrado_en) return turnoCerradoPorOtro();
-        if (cambios) setAviso({ texto: cambios, tipo: "advertencia" });
-      } catch {
-        // sin conexión: se reintenta en el próximo ciclo
-      }
-    }
-    const id = setInterval(tick, REFRESCO_MS);
-    document.addEventListener("visibilitychange", tick);
-    return () => {
-      clearInterval(id);
-      document.removeEventListener("visibilitychange", tick);
-    };
-  }, [sincronizar, supabase, turnoId, turnoCerradoPorOtro]);
-
   /**
    * Cambios del carrito hechos por el cajero. Si lo deja vacío, abandonó ese cobro:
    * se descarta la clave pendiente para que un carrito idéntico posterior sea una venta nueva.
@@ -181,50 +155,84 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
     if (quedaVacio && ventana === "cobro") setVentana(null);
   }
 
-  // ── Cobro ──
+  const alTocarProducto = useCallback((p: ProductoVendible) => {
+    setUltimaVenta(null);
+    despachar({ tipo: "agregar", producto: p });
+  }, []);
+
+  const alBuscarProducto = useCallback((b: boolean) => {
+    if (b) setUltimaVenta(null);
+  }, []);
+
+  // ── Cobro (con bloqueo sincrónico contra doble toque y recuperación de colisión de clave) ──
+  const cobrandoRef = useRef(false);
   async function cobrar(metodo: MetodoPago, recibido: number | null, cliente: Cliente | null): Promise<ResultadoCobro> {
-    const firma = firmaCarrito(carrito);
-    const pendiente = leerJSON<{ clave: string; firma: string }>(claveCobro(turnoId));
-    // Mismo carrito → misma clave: si el cobro anterior sí llegó, la BD no lo duplica
-    const clave = pendiente?.firma === firma ? pendiente.clave : nuevoUUID();
-    localStorage.setItem(claveCobro(turnoId), JSON.stringify({ clave, firma }));
-
-    const { data, error } = await supabase.rpc("registrar_venta", {
-      p_clave: clave,
-      p_metodo: metodo,
-      p_lineas: carrito.map((l) => ({ producto_id: l.productoId, cantidad: l.cantidad, precio: l.precio })),
-      p_recibido: recibido,
-      // Consumidor Final no se envía: la BD lo pone por defecto
-      ...(cliente && !esConsumidorFinal(cliente) ? { p_cliente: cliente } : {}),
-    });
-
-    if (error) {
-      if (esCodigo(error, "TURNO_CERRADO")) {
-        turnoCerradoPorOtro();
-        return { ok: false, error: mensajeDeError(error), reintentable: false };
-      }
-      if (esCodigo(error, "PRECIOS_ACTUALIZADOS")) {
-        const cambios = await sincronizar().catch(() => null);
-        return {
-          ok: false,
-          error: `${cambios ?? "Algunos precios cambiaron"}. Revisa el total y confirma de nuevo`,
-          reintentable: false,
-        };
-      }
-      if (esErrorDeRed(error) || !navigator.onLine) {
-        return { ok: false, error: "Sin conexión. El carrito se conserva", reintentable: true };
-      }
-      return { ok: false, error: mensajeDeError(error, "No se pudo registrar la venta"), reintentable: true };
+    if (cobrandoRef.current) {
+      return { ok: false, error: "Registrando la venta…", reintentable: false };
     }
+    cobrandoRef.current = true;
+    try {
+      const firma = firmaCarrito(carrito);
+      const pendiente = leerJSON<{ clave: string; firma: string }>(claveCobro(turnoId));
+      // Mismo carrito → misma clave: si el cobro anterior sí llegó, la BD no lo duplica
+      const clave = pendiente?.firma === firma ? pendiente.clave : nuevoUUID();
+      localStorage.setItem(claveCobro(turnoId), JSON.stringify({ clave, firma }));
 
-    const ticket = data as DatosTicket;
-    localStorage.removeItem(claveCobro(turnoId));
-    despachar({ tipo: "vaciar" });
-    imprimir({ tipo: "ticket", datos: ticket, copia: false });
-    // Sin ventana de confirmación: vuelve a vender y el cambio queda a la vista
-    setUltimaVenta({ numero: ticket.numero, cambio: ticket.cambio, total: ticket.total });
-    setVentana(null);
-    return { ok: true, cambio: ticket.cambio };
+      const { data, error } = await supabase.rpc("registrar_venta", {
+        p_clave: clave,
+        p_metodo: metodo,
+        p_lineas: carrito.map((l) => ({ producto_id: l.productoId, cantidad: l.cantidad, precio: l.precio })),
+        p_recibido: recibido,
+        // Consumidor Final no se envía: la BD lo pone por defecto
+        ...(cliente && !esConsumidorFinal(cliente) ? { p_cliente: cliente } : {}),
+      });
+
+      let ticket = data as DatosTicket | null;
+
+      if (error) {
+        // Si dos peticiones simultáneas con la misma clave chocaron en la restricción única (23505),
+        // recuperamos el ticket de la venta que ya quedó guardada sin duplicarla ni mostrar error.
+        if (error.code === "23505") {
+          const { data: existente } = await supabase.from("ventas").select("id").eq("clave", clave).maybeSingle();
+          if (existente?.id) {
+            const { data: recuperado } = await supabase.rpc("ticket_venta", { p_venta: existente.id });
+            if (recuperado) ticket = recuperado as DatosTicket;
+          }
+        }
+        if (!ticket) {
+          if (esCodigo(error, "TURNO_CERRADO")) {
+            turnoCerradoPorOtro();
+            return { ok: false, error: mensajeDeError(error), reintentable: false };
+          }
+          if (esCodigo(error, "PRECIOS_ACTUALIZADOS")) {
+            const cambios = await sincronizar().catch(() => null);
+            return {
+              ok: false,
+              error: `${cambios ?? "Algunos precios cambiaron"}. Revisa el total y confirma de nuevo`,
+              reintentable: false,
+            };
+          }
+          if (esErrorDeRed(error) || !navigator.onLine) {
+            return { ok: false, error: "Sin conexión. El carrito se conserva", reintentable: true };
+          }
+          return { ok: false, error: mensajeDeError(error, "No se pudo registrar la venta"), reintentable: true };
+        }
+      }
+
+      if (!ticket) {
+        return { ok: false, error: "No se pudo registrar la venta", reintentable: true };
+      }
+
+      localStorage.removeItem(claveCobro(turnoId));
+      despachar({ tipo: "vaciar" });
+      imprimir({ tipo: "ticket", datos: ticket, copia: false });
+      // Sin ventana de confirmación: vuelve a vender y el cambio queda a la vista
+      setUltimaVenta({ numero: ticket.numero, cambio: ticket.cambio, total: ticket.total });
+      setVentana(null);
+      return { ok: true, cambio: ticket.cambio };
+    } finally {
+      cobrandoRef.current = false;
+    }
   }
 
   // ── Cajón: sin papel con el agente del equipo; si no está, con la impresión mínima ──
@@ -262,32 +270,40 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
     setVentana("cierre");
   }
 
+  const cerrandoRef = useRef(false);
   async function cerrarTurno(contado: number, aMayor: number) {
-    const { data, error } = await supabase.rpc("cerrar_turno", { p_turno: turnoId, p_contado: contado, p_a_mayor: aMayor });
-    if (error) {
-      if (esCodigo(error, "TURNO_CERRADO")) {
-        turnoCerradoPorOtro();
-        return null;
+    if (cerrandoRef.current) return null;
+    cerrandoRef.current = true;
+    try {
+      const { data, error } = await supabase.rpc("cerrar_turno", { p_turno: turnoId, p_contado: contado, p_a_mayor: aMayor });
+      if (error) {
+        if (esCodigo(error, "TURNO_CERRADO")) {
+          turnoCerradoPorOtro();
+          return null;
+        }
+        const red = esErrorDeRed(error) || !navigator.onLine;
+        return { error: red ? "Sin conexión. Intenta de nuevo" : mensajeDeError(error, "No se pudo cerrar"), reintentable: true };
       }
-      const red = esErrorDeRed(error) || !navigator.onLine;
-      return { error: red ? "Sin conexión. Intenta de nuevo" : mensajeDeError(error, "No se pudo cerrar"), reintentable: true };
+      const datos = data as DatosReporte;
+      localStorage.removeItem(claveCarrito(turnoId));
+      localStorage.removeItem(claveCobro(turnoId));
+      setVentana(null);
+      cerrado.current = true;
+      setReporte(datos);
+      imprimir({ tipo: "reporte", datos, copia: false });
+      // Turno cerrado = fin de la sesión del cajero. La pantalla de resultado sigue visible
+      // (con reimprimir), pero cualquier recarga lleva al inicio de sesión del siguiente cajero.
+      void supabase.auth.signOut({ scope: "local" });
+      return null;
+    } finally {
+      cerrandoRef.current = false;
     }
-    const datos = data as DatosReporte;
-    localStorage.removeItem(claveCarrito(turnoId));
-    localStorage.removeItem(claveCobro(turnoId));
-    setVentana(null);
-    cerrado.current = true;
-    setReporte(datos);
-    imprimir({ tipo: "reporte", datos, copia: false });
-    // Turno cerrado = fin de la sesión del cajero. La pantalla de resultado sigue visible
-    // (con reimprimir), pero cualquier recarga lleva al inicio de sesión del siguiente cajero.
-    void supabase.auth.signOut({ scope: "local" });
-    return null;
   }
+
+  const cantidades = useMemo(() => new Map(carrito.map((l) => [l.productoId, l.cantidad])), [carrito]);
 
   if (reporte) return <ResultadoCierre reporte={reporte} />;
 
-  const cantidades = new Map(carrito.map((l) => [l.productoId, l.cantidad]));
   const enCobro = ventana === "cobro" && carrito.length > 0;
   const botonCabecera =
     "flex min-h-12 min-w-12 items-center justify-center gap-2 rounded-tarjeta px-3 font-semibold text-white hover:bg-white/15 active:bg-white/25";
@@ -428,19 +444,14 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
               </button>
             </div>
           )}
-          {enCobro ? (
-            <PanelCobro total={totalCarrito(carrito)} onCancelar={() => setVentana(null)} onConfirmar={cobrar} />
-          ) : (
-            <CuadriculaProductos
-              productos={productos}
-              cantidades={cantidades}
-              onBuscando={(b) => b && setUltimaVenta(null)}
-              onTocar={(p) => {
-                setUltimaVenta(null);
-                despachar({ tipo: "agregar", producto: p });
-              }}
-            />
-          )}
+          {enCobro && <PanelCobro total={totalCarrito(carrito)} onCancelar={() => setVentana(null)} onConfirmar={cobrar} />}
+          <CuadriculaProductos
+            productos={productos}
+            cantidades={cantidades}
+            oculto={enCobro}
+            onBuscando={alBuscarProducto}
+            onTocar={alTocarProducto}
+          />
         </section>
         <PanelCarrito
           carrito={carrito}
