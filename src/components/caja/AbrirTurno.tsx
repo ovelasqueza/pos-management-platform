@@ -10,6 +10,7 @@ import type { DatosReporte } from "@/lib/dominio/documentos";
 import { Boton } from "@/components/ui/Boton";
 import { Aviso } from "@/components/ui/Aviso";
 import { useImprimir } from "@/components/impresion/ProveedorImpresion";
+import { SelectorPapel } from "@/components/impresion/SelectorPapel";
 import { PantallaMonto, TecladoNumerico } from "./TecladoNumerico";
 
 type Props = {
@@ -56,11 +57,14 @@ export function AbrirTurno({ sede, cajero, ultimoReporte, ocupada, baseSugerida 
           <p className="font-semibold">{sede}</p>
           <p className="text-sm text-texto-3">{cajero}</p>
         </div>
-        <form action="/salir" method="post">
-          <Boton type="submit" variante="fantasma" icono={<LogOut size={20} aria-hidden />}>
-            Salir
-          </Boton>
-        </form>
+        <div className="flex items-center gap-2">
+          <SelectorPapel variante="claro" />
+          <form action="/salir" method="post">
+            <Boton type="submit" variante="fantasma" icono={<LogOut size={20} aria-hidden />}>
+              Salir
+            </Boton>
+          </form>
+        </div>
       </header>
 
       <main className="flex flex-1 items-center justify-center p-4">

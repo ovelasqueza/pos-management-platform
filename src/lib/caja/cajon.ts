@@ -5,10 +5,10 @@
 const AGENTE_CAJON = "http://127.0.0.1:17777";
 
 /**
- * Muestra el botón "Cajón" en la caja. Desactivado por ahora (pedido del usuario, 2026-11-04).
- * Para activarlo: cambiar a true y publicar. Todo lo demás (agente, impresión mínima) ya está listo.
+ * Muestra el botón "Cajón" en la caja. Activado (pedido del usuario, 2026-11-10).
+ * Si el agente local no responde, la caja usa la impresión mínima de 1 mm.
  */
-export const BOTON_CAJON_ACTIVO = false;
+export const BOTON_CAJON_ACTIVO = true;
 
 /**
  * Abre el cajón con el agente. Devuelve false si el agente no está instalado,

@@ -5,6 +5,7 @@ import { MenuAdmin } from "@/components/admin/MenuAdmin";
 import { SelectorSede } from "@/components/admin/SelectorSede";
 import { BotonSalir } from "@/components/admin/BotonSalir";
 import { TransicionAdmin } from "@/components/admin/TransicionAdmin";
+import { SelectorPapel } from "@/components/impresion/SelectorPapel";
 
 export default async function LayoutAdmin({ children, params }: LayoutProps<"/admin/[sede]">) {
   const [perfil, { sede: segmento }] = await Promise.all([requerirAdmin(), params]);
@@ -22,6 +23,9 @@ export default async function LayoutAdmin({ children, params }: LayoutProps<"/ad
             sedes={sedes.map(({ id, nombre, tipo, ciudad, direccion, activa }) => ({ id, nombre, tipo, ciudad, direccion, activa }))}
           />
           <div className="flex min-w-0 items-center justify-end gap-3">
+            <div className="hidden sm:block">
+              <SelectorPapel variante="claro" />
+            </div>
             <p className="hidden truncate text-sm text-texto-3 lg:block">{perfil.nombreCompleto}</p>
             <BotonSalir compacto />
           </div>

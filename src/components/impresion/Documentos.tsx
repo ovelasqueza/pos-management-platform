@@ -1,3 +1,5 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { formatearPesos } from "@/lib/dominio/dinero";
 import { formatearFechaHora, formatearHora } from "@/lib/dominio/fechas";
@@ -5,8 +7,52 @@ import { clasificarDiferencia, nombreDiferencia, nombreMetodo } from "@/lib/domi
 import type { DatosReporte, DatosTicket } from "@/lib/dominio/documentos";
 import { CONSUMIDOR_FINAL, esConsumidorFinal } from "@/lib/dominio/cliente";
 import { describirOrigen } from "@/lib/dominio/cajaMayor";
+import { useAnchoPapel, type AnchoPapel } from "@/lib/impresion/papel";
 
-/* Documentos para impresora térmica de 80 mm (≈ 72 mm imprimibles). */
+/* Documentos para impresora térmica: 80 mm (≈72 mm imprimibles) o 58 mm (≈48 mm imprimibles). */
+
+type Medidas = {
+  papel: string;
+  encabezado: string;
+  nombre: string;
+  total: string;
+  destacado: string;
+  titulo: string;
+  nota: string;
+  anulada: string;
+  marca: string;
+  firma: string;
+};
+
+const MEDIDAS: Record<AnchoPapel, Medidas> = {
+  80: {
+    papel: "w-[72mm] p-[2mm] text-[12px]",
+    encabezado: "text-[11px]",
+    nombre: "text-[14px]",
+    total: "text-[16px]",
+    destacado: "text-[14px]",
+    titulo: "text-[13px]",
+    nota: "text-[11px]",
+    anulada: "text-[20px]",
+    marca: "text-[64px]",
+    firma: "text-[12px]",
+  },
+  58: {
+    // Centrado en el rollo de 58 mm: el área imprimible típica es de 48 mm.
+    papel: "mx-auto w-[48mm] p-[2mm] text-[10px]",
+    encabezado: "text-[9px]",
+    nombre: "text-[12px]",
+    total: "text-[13px]",
+    destacado: "text-[12px]",
+    titulo: "text-[11px]",
+    nota: "text-[9px]",
+    anulada: "text-[16px]",
+    marca: "text-[46px]",
+    firma: "text-[10px]",
+  },
+};
+
+const BASE = "font-mono leading-normal text-black";
 
 const Fila = ({ izq, der, fuerte }: { izq: ReactNode; der: ReactNode; fuerte?: boolean }) => (
   <div className={`flex justify-between gap-2 py-px ${fuerte ? "font-bold" : ""}`}>
@@ -29,18 +75,28 @@ function Seccion({ titulo, children }: { titulo?: string; children: ReactNode })
 }
 
 /** Fila destacada (totales): más grande y con un borde arriba. */
-const Destacado = ({ izq, der }: { izq: ReactNode; der: ReactNode }) => (
-  <div className="mt-1 border-t border-black pt-1 text-[14px]">
+const Destacado = ({ izq, der, clase }: { izq: ReactNode; der: ReactNode; clase: string }) => (
+  <div className={`mt-1 border-t border-black pt-1 ${clase}`}>
     <Fila izq={izq} der={der} fuerte />
   </div>
 );
 
 // Sin cambios: así quedó aprobado el título
-function Encabezado({ sede, copia, regimen }: { sede: DatosTicket["sede"]; copia: boolean; regimen?: boolean }) {
+function Encabezado({
+  sede,
+  copia,
+  regimen,
+  medidas,
+}: {
+  sede: DatosTicket["sede"];
+  copia: boolean;
+  regimen?: boolean;
+  medidas: Medidas;
+}) {
   return (
-    <div className="text-center text-[11px] leading-snug">
+    <div className={`text-center leading-snug ${medidas.encabezado}`}>
       {copia && <p className="mb-1 border border-black font-bold">COPIA</p>}
-      <p className="text-[14px] font-bold">{sede.nombre}</p>
+      <p className={`font-bold ${medidas.nombre}`}>{sede.nombre}</p>
       {sede.nit && <p>NIT {sede.nit}</p>}
       {regimen && <p>Régimen simplificado</p>}
       {sede.direccion && <p>{sede.direccion}</p>}
@@ -49,23 +105,24 @@ function Encabezado({ sede, copia, regimen }: { sede: DatosTicket["sede"]; copia
   );
 }
 
-const papel = "w-[72mm] p-[2mm] font-mono text-[12px] leading-normal text-black";
-
 export function Ticket({ datos, copia }: { datos: DatosTicket; copia: boolean }) {
+  const m = MEDIDAS[useAnchoPapel()];
   const anulada = Boolean(datos.anulada_en);
   return (
-    <div className={`${papel} relative overflow-hidden`}>
+    <div className={`${m.papel} ${BASE} relative overflow-hidden`}>
       {/* Venta anulada: marca grande sobrepuesta (letras huecas para que el contenido se siga leyendo) */}
       {anulada && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden>
-          <span className="-rotate-[35deg] font-sans text-[64px] font-black tracking-wider text-transparent [-webkit-text-stroke:2px_black]">
+          <span
+            className={`-rotate-[35deg] font-sans font-black tracking-wider text-transparent [-webkit-text-stroke:2px_black] ${m.marca}`}
+          >
             ANULADA
           </span>
         </div>
       )}
-      <Encabezado sede={datos.sede} copia={copia} regimen />
+      <Encabezado sede={datos.sede} copia={copia} regimen medidas={m} />
       {anulada && (
-        <p className="mt-2 bg-black py-1 text-center text-[20px] font-black tracking-widest text-white">VENTA ANULADA</p>
+        <p className={`mt-2 bg-black py-1 text-center font-black tracking-widest text-white ${m.anulada}`}>VENTA ANULADA</p>
       )}
       <Linea />
       <Seccion>
@@ -89,7 +146,7 @@ export function Ticket({ datos, copia }: { datos: DatosTicket; copia: boolean })
         </div>
       </Seccion>
       <Linea />
-      <div className="text-[16px]">
+      <div className={m.total}>
         <Fila izq="TOTAL" der={formatearPesos(datos.total)} fuerte />
       </div>
       <div className="mt-2">
@@ -118,14 +175,17 @@ export function Ticket({ datos, copia }: { datos: DatosTicket; copia: boolean })
 }
 
 export function ReporteTurno({ datos, copia }: { datos: DatosReporte; copia: boolean }) {
+  const m = MEDIDAS[useAnchoPapel()];
   const clase = clasificarDiferencia(datos.diferencia);
   // Reportes anteriores a la spec 06 no traen origen: todo salió de la caja
   const conMayor = datos.caja_mayor !== undefined;
   const gastosCaja = datos.gastos_caja ?? datos.gastos_total;
   return (
-    <div className={papel}>
-      <Encabezado sede={datos.sede} copia={copia} regimen />
-      <p className="mt-2 border-y-2 border-black py-1 text-center text-[13px] font-bold tracking-widest">REPORTE DE TURNO</p>
+    <div className={`${m.papel} ${BASE}`}>
+      <Encabezado sede={datos.sede} copia={copia} regimen medidas={m} />
+      <p className={`mt-2 border-y-2 border-black py-1 text-center font-bold tracking-widest ${m.titulo}`}>
+        REPORTE DE TURNO
+      </p>
 
       <div className="mt-2.5">
         <Seccion>
@@ -141,7 +201,7 @@ export function ReporteTurno({ datos, copia }: { datos: DatosReporte; copia: boo
         <Fila izq="Efectivo" der={formatearPesos(datos.por_metodo.efectivo)} />
         <Fila izq="QR" der={formatearPesos(datos.por_metodo.transferencia)} />
         <Fila izq="Tarjeta" der={formatearPesos(datos.por_metodo.tarjeta)} />
-        <Destacado izq="Total vendido" der={formatearPesos(datos.ventas_total)} />
+        <Destacado izq="Total vendido" der={formatearPesos(datos.ventas_total)} clase={m.destacado} />
       </Seccion>
       <Linea />
 
@@ -153,11 +213,11 @@ export function ReporteTurno({ datos, copia }: { datos: DatosReporte; copia: boo
               {datos.anuladas.map((a) => (
                 <div key={a.numero}>
                   <Fila izq={`#${a.numero}  ${formatearHora(a.hora)}  ${nombreMetodo(a.metodo)}`} der={formatearPesos(a.total)} />
-                  <p className="pl-3 text-[11px] break-words">↳ {a.motivo}</p>
+                  <p className={`pl-3 break-words ${m.nota}`}>↳ {a.motivo}</p>
                 </div>
               ))}
             </div>
-            <Destacado izq="Total anulado" der={formatearPesos(datos.anuladas_total ?? 0)} />
+            <Destacado izq="Total anulado" der={formatearPesos(datos.anuladas_total ?? 0)} clase={m.destacado} />
           </Seccion>
           <Linea />
         </>
@@ -169,7 +229,7 @@ export function ReporteTurno({ datos, copia }: { datos: DatosReporte; copia: boo
           {datos.gastos.map((g, i) => (
             <div key={i}>
               <Fila izq={`${formatearHora(g.hora)}  ${g.descripcion}`} der={formatearPesos(g.monto)} />
-              {conMayor && <p className="pl-3 text-[11px]">↳ {describirOrigen(g)}</p>}
+              {conMayor && <p className={`pl-3 ${m.nota}`}>↳ {describirOrigen(g)}</p>}
             </div>
           ))}
         </div>
@@ -181,7 +241,7 @@ export function ReporteTurno({ datos, copia }: { datos: DatosReporte; copia: boo
                 <Fila izq="De caja mayor" der={formatearPesos(datos.gastos_mayor ?? 0)} />
               </>
             )}
-            <Destacado izq="Total gastos" der={formatearPesos(datos.gastos_total)} />
+            <Destacado izq="Total gastos" der={formatearPesos(datos.gastos_total)} clase={m.destacado} />
           </div>
         )}
       </Seccion>
@@ -191,9 +251,9 @@ export function ReporteTurno({ datos, copia }: { datos: DatosReporte; copia: boo
         <Fila izq="Base" der={formatearPesos(datos.base)} />
         <Fila izq="+ Ventas efectivo" der={formatearPesos(datos.por_metodo.efectivo)} />
         <Fila izq={conMayor ? "− Gastos de cajón" : "− Gastos"} der={formatearPesos(gastosCaja)} />
-        <Destacado izq="Esperado" der={formatearPesos(datos.esperado)} />
+        <Destacado izq="Esperado" der={formatearPesos(datos.esperado)} clase={m.destacado} />
         <Fila izq="Contado" der={formatearPesos(datos.contado)} fuerte />
-        <div className="mt-1.5 border-2 border-black px-1.5 py-1 text-[14px]">
+        <div className={`mt-1.5 border-2 border-black px-1.5 py-1 ${m.destacado}`}>
           <Fila izq={nombreDiferencia[clase]} der={formatearPesos(datos.diferencia)} fuerte />
         </div>
       </Seccion>
@@ -205,8 +265,8 @@ export function ReporteTurno({ datos, copia }: { datos: DatosReporte; copia: boo
             <Fila izq="Efectivo" der={formatearPesos(datos.caja_mayor.efectivo)} />
             <Fila izq="QR" der={formatearPesos(datos.caja_mayor.transferencia)} />
             <Fila izq="Tarjeta" der={formatearPesos(datos.caja_mayor.tarjeta)} />
-            <Destacado izq="Total a caja mayor" der={formatearPesos(datos.caja_mayor.total)} />
-            <div className="mt-1.5 border-2 border-black px-1.5 py-1 text-[14px]">
+            <Destacado izq="Total a caja mayor" der={formatearPesos(datos.caja_mayor.total)} clase={m.destacado} />
+            <div className={`mt-1.5 border-2 border-black px-1.5 py-1 ${m.destacado}`}>
               <Fila izq="Queda en cajón" der={formatearPesos(datos.queda_en_caja ?? datos.contado)} fuerte />
             </div>
           </Seccion>
@@ -221,7 +281,7 @@ export function ReporteTurno({ datos, copia }: { datos: DatosReporte; copia: boo
         ))}
       </Seccion>
 
-      <div className="mt-14 grid grid-cols-2 gap-4 text-center">
+      <div className={`mt-14 grid grid-cols-2 gap-4 text-center ${m.firma}`}>
         <div className="border-t border-black pt-1">Cajero</div>
         <div className="border-t border-black pt-1">Encargado</div>
       </div>
@@ -229,11 +289,19 @@ export function ReporteTurno({ datos, copia }: { datos: DatosReporte; copia: boo
   );
 }
 
-
 /**
  * Apertura del cajón sin venta. El driver de la impresora abre el cajón al empezar a imprimir;
  * se manda una página casi vacía (sin texto, 1 mm) para gastar el mínimo de papel.
  */
 export function AperturaCajon() {
-  return <div className="h-[1mm] w-[72mm]" />;
+  const ancho = useAnchoPapel();
+  return (
+    <div
+      style={
+        ancho === 58
+          ? { height: "1mm", width: "48mm", margin: "0 auto" }
+          : { height: "1mm", width: "72mm" }
+      }
+    />
+  );
 }

@@ -56,6 +56,48 @@ Si tienes `npm run dev` abierto, ciérralo antes (comparten la carpeta `.next`).
 
 Netlify → **Domain management → Add a domain**. Sigue las instrucciones para el DNS; el HTTPS se activa solo.
 
+## Cloudflare Workers (reemplaza a Netlify)
+
+Se usa el adaptador `@opennextjs/cloudflare` (Next.js sobre Workers). Archivos: `wrangler.jsonc`, `open-next.config.ts`. Requiere `next` ≥ 16.4.5.
+
+### Una sola vez
+
+1. Crea una cuenta gratis en https://dash.cloudflare.com
+2. En la terminal del proyecto: `npx wrangler login`
+3. Las variables `NEXT_PUBLIC_*` se incrustan **al compilar**, y se leen de `.env.local` (o `.env.production`). No hay que subirlas a Cloudflare.
+4. El secreto, una vez (pide el valor en la terminal):
+
+   ```
+   npx wrangler secret put SUPABASE_SECRET_KEY
+   ```
+
+   Si se hace antes del primer despliegue, Wrangler pide crear el Worker: acepta.
+
+### Probar en local con el motor de Cloudflare (opcional)
+
+Copia `.dev.vars.example` a `.dev.vars`, pon la clave y ejecuta `npm run preview`.
+
+### Publicar una versión
+
+```
+npm run deploy
+```
+
+Compila, sube y muestra la dirección `https://pos-management-platform.<tu-cuenta>.workers.dev`. Si tienes `npm run dev` abierto, ciérralo antes (comparten `.next`).
+
+### Después de publicar
+
+- Agrega la nueva dirección a los orígenes del agente del cajón: `instalar.cmd -Origenes https://pos-management-platform.<tu-cuenta>.workers.dev` en cada caja (o la del dominio propio).
+- En Supabase → Authentication → URL Configuration, agrega la nueva dirección si usas redirecciones.
+- Repite la lista de pruebas de la Etapa 1.
+- Dominio propio: Workers & Pages → tu Worker → Settings → Domains & Routes.
+
+### Avisos
+
+- El `proxy.ts` de Next 16 corre en runtime Node. OpenNext lo marca como **experimental** en Cloudflare: prueba bien login, sesión y la regla del turno por equipo.
+- Región: Workers corre cerca del usuario, pero Supabase está en us-east-2. Si va lento, activa Smart Placement (`"placement": { "mode": "smart" }` en `wrangler.jsonc`).
+- `next/image` usa el binding `IMAGES` de Cloudflare.
+
 ## Respaldo semanal de la base de datos
 
 El plan gratuito de Supabase no guarda copias. Una vez por semana:

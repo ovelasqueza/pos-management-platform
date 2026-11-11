@@ -49,3 +49,10 @@ next-env.d.ts
 
 # Cotizaciones con precios (no subir: el repositorio es público)
 /docs/cotizacion/
+
+# cloudflare
+.open-next
+.wrangler
+.dev.vars
+!.dev.vars.example
+

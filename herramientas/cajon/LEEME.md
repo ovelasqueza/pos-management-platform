@@ -1,4 +1,4 @@
-# Cajón sin papel
+﻿# Cajón sin papel
 
 El agente del cajón es un programa pequeño que se instala **en el computador de cada caja**, el que tiene la impresora y el cajón conectados. Cuando el cajero toca **Cajón**, el agente le manda a la impresora la orden de abrir el cajón, sin imprimir nada.
 
@@ -7,13 +7,13 @@ Si el agente no está instalado o no responde, el botón **Cajón** abre el caj�
 ## Instalar (una vez por caja)
 
 1. Copia la carpeta `herramientas/cajon` al computador de la caja. Puede ser con una USB o descargándola de GitHub.
-2. Haz **doble clic en `instalar.cmd`**. No necesita permisos de administrador.
+2. Haz **doble clic en `instalar.cmd`**. No necesita permisos de administrador (con administrador queda para todos los usuarios de Windows del equipo).
 3. Escribe el **número de la impresora** que tiene el cajón conectado.
 4. Cuando pregunte "¿Probar abrir el cajón ahora?", escribe **S**. El cajón debe abrir.
    - Si no abre, cierra la ventana y ejecuta en esa carpeta: `instalar.cmd -Pin 5`
 5. Abre la app de caja y toca **Cajón**. Si Chrome pregunta si la página puede **acceder a dispositivos de tu red local**, elige **Permitir**.
 
-Desde ese momento el agente arranca solo cada vez que se inicia sesión en Windows.
+Desde ese momento el agente arranca solo al encender o reiniciar el equipo. Queda en `C:\Users\Public\POS-Cajon` y lo vigila un proceso oculto que lo vuelve a levantar si se cierra por cualquier motivo (registro de Windows, carpeta Inicio y tarea programada; solo corre una copia a la vez).
 
 ## Si la app se abre desde otra dirección
 
@@ -40,7 +40,7 @@ Haz doble clic en `desinstalar.cmd`.
 
 ## Si no funciona
 
-- Revisa el registro del agente en `%LOCALAPPDATA%\POS-Cajon\agente.log`. Para abrirlo, pega esa ruta en la barra del Explorador de archivos.
+- Revisa el registro del agente en `C:\Users\Public\POS-Cajon\agente.log` (o `%LOCALAPPDATA%\POS-Cajon\agente.log` si no hubo permiso para la anterior). Para abrirlo, pega esa ruta en la barra del Explorador de archivos.
 - Si el botón sigue gastando papel, el agente no está respondiendo. Ejecuta `instalar.cmd` de nuevo y fíjate en el mensaje "OK: el agente está corriendo".
 - Si Chrome bloqueó el permiso de red local, entra a `chrome://settings/content/localNetworkAccess` (o al candado de la barra de direcciones) y permítelo para la app.
 
@@ -48,7 +48,7 @@ Haz doble clic en `desinstalar.cmd`.
 
 - El agente solo escucha dentro del mismo equipo (`127.0.0.1`, puerto 17777). No se puede usar desde otros equipos de la red.
 - Solo responde a las direcciones de la app de la lista anterior.
-- Lo único que puede hacer es abrir el cajón.
+- Puede abrir el cajón y enviar a la impresora los bytes de un recibo (`POST /imprimir`, máx. 64 KB, que esta app no usa todavía). Nada más.
 
 ## Varias apps en el mismo equipo
 
@@ -73,3 +73,7 @@ Esta información es para quien copie el botón a otro proyecto, sea una persona
 4. **Evitar doble clic**: no llamar de nuevo mientras una llamada está en curso.
 
 El agente manda `ESC p 0 25 250` (`1B 70 00 19 FA`) por la cola de Windows en modo RAW. Con `-Pin 5` manda `1B 70 01 19 FA`.
+
+## Botón Cajón en la caja
+
+El botón muestra el resultado: **Abriendo…**, **¡Abierto!** (con el agente, sin papel) o **Abierto (papel)** si el agente no respondió y se usó la página mínima.

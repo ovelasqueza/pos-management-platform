@@ -25,6 +25,7 @@ import { Boton } from "@/components/ui/Boton";
 import { Aviso } from "@/components/ui/Aviso";
 import { Modal } from "@/components/ui/Modal";
 import { useImprimir } from "@/components/impresion/ProveedorImpresion";
+import { SelectorPapel } from "@/components/impresion/SelectorPapel";
 import { CuadriculaProductos } from "./CuadriculaProductos";
 import { PanelCarrito } from "./PanelCarrito";
 import { PanelCobro, type ResultadoCobro } from "./PanelCobro";
@@ -43,6 +44,14 @@ type Props = {
 type Ventana = "cobro" | "ventas" | "gastos" | "cierre" | "salir" | null;
 
 const REFRESCO_MS = 30_000;
+
+/** Texto del botón Cajón según el resultado: "papel" = el agente no respondió y se imprimió la página mínima. */
+const TEXTO_CAJON = {
+  listo: "Cajón",
+  abriendo: "Abriendo…",
+  abierto: "¡Abierto!",
+  papel: "Abierto (papel)",
+} as const;
 
 /** "Maria Gainza" → "MG" */
 const iniciales = (nombre: string) =>
@@ -220,13 +229,27 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
 
   // ── Cajón: sin papel con el agente del equipo; si no está, con la impresión mínima ──
   const abriendoCajon = useRef(false);
+  const temporizadorCajon = useRef<number | null>(null);
+  const [estadoCajon, setEstadoCajon] = useState<"listo" | "abriendo" | "abierto" | "papel">("listo");
+  useEffect(
+    () => () => {
+      if (temporizadorCajon.current !== null) window.clearTimeout(temporizadorCajon.current);
+    },
+    [],
+  );
   async function abrirCajon() {
     if (abriendoCajon.current) return;
     abriendoCajon.current = true;
+    if (temporizadorCajon.current !== null) window.clearTimeout(temporizadorCajon.current);
+    navigator.vibrate?.(12);
+    setEstadoCajon("abriendo");
     try {
-      if (!(await abrirCajonSinPapel())) imprimir({ tipo: "cajon" });
+      const sinPapel = await abrirCajonSinPapel();
+      if (!sinPapel) imprimir({ tipo: "cajon" });
+      setEstadoCajon(sinPapel ? "abierto" : "papel");
     } finally {
       abriendoCajon.current = false;
+      temporizadorCajon.current = window.setTimeout(() => setEstadoCajon("listo"), 1600);
     }
   }
 
@@ -332,10 +355,22 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
           {/* Al cobrar no se puede cerrar ni salir a la mitad */}
           {!enCobro && (
             <>
+              <div className="hidden md:block">
+                <SelectorPapel />
+              </div>
               {BOTON_CAJON_ACTIVO && (
-                <button type="button" onClick={abrirCajon} className={botonCabecera} aria-label="Abrir cajón">
+                <button
+                  type="button"
+                  onClick={abrirCajon}
+                  disabled={estadoCajon === "abriendo"}
+                  className={botonCabecera}
+                  aria-label="Abrir cajón"
+                >
                   <Vault size={20} aria-hidden />
-                  <span className="hidden lg:inline">Cajón</span>
+                  <span className="hidden lg:inline">{TEXTO_CAJON[estadoCajon]}</span>
+                  <span className="sr-only" role="status" aria-live="polite">
+                    {estadoCajon === "listo" ? "" : TEXTO_CAJON[estadoCajon]}
+                  </span>
                 </button>
               )}
               <button type="button" onClick={pedirCierre} className={botonCabecera}>

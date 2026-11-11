@@ -78,10 +78,9 @@ body {
   }
 }
 
-/* Impresión 80 mm: solo se imprime .zona-impresion */
+/* Impresión térmica: el tamaño de página (80 mm o 58 mm) lo inyecta ProveedorImpresion. */
 @media print {
   @page {
-    size: 80mm auto;
     margin: 0;
   }
   body * {

@@ -1,0 +1,3 @@
+# Copiar a .dev.vars para `npm run preview` (Wrangler local). Nunca subir .dev.vars a git.
+NEXTJS_ENV=development
+SUPABASE_SECRET_KEY=
