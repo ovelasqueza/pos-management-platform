@@ -24,11 +24,11 @@ export const listarSedes = cache(async (): Promise<Sede[]> => {
   let { data, error } = await supabase
     .from("sedes")
     .select("id, nombre, nit, tipo, ciudad, direccion, telefono, ancho_papel, activa");
-  // Respaldo mientras no se ejecute la migración de ancho_papel o nit
-  if (error?.code === "42703" || error?.code === "PGRST204") {
+  // Respaldo por si aún no se ha ejecutado la migración de ancho_papel o nit en Supabase
+  if (error) {
     ({ data, error } = await supabase.from("sedes").select("id, nombre, nit, tipo, ciudad, direccion, telefono, activa"));
   }
-  if (error?.code === "42703" || error?.code === "PGRST204") {
+  if (error) {
     ({ data, error } = await supabase.from("sedes").select("id, nombre, tipo, ciudad, direccion, telefono, activa"));
   }
   if (error) throw new Error(`No se pudieron cargar las sedes: ${error.message}`);

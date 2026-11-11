@@ -33,7 +33,7 @@ export async function crearSede(_: EstadoFormulario, f: FormData): Promise<Estad
 
   const supabase = await crearClienteServidor();
   let { error } = await supabase.from("sedes").insert(datos.data);
-  if (error?.code === "PGRST204" || error?.code === "42703") {
+  if (error) {
     const { ancho_papel: _omitir, ...sinAncho } = datos.data;
     void _omitir;
     ({ error } = await supabase.from("sedes").insert(sinAncho));
@@ -60,7 +60,7 @@ export async function editarSede(_: EstadoFormulario, f: FormData): Promise<Esta
   const { id, ...cambios } = datos.data;
   const supabase = await crearClienteServidor();
   let { error } = await supabase.from("sedes").update(cambios).eq("id", id);
-  if (error?.code === "PGRST204" || error?.code === "42703") {
+  if (error) {
     const { ancho_papel: _omitir, ...sinAncho } = cambios;
     void _omitir;
     ({ error } = await supabase.from("sedes").update(sinAncho).eq("id", id));

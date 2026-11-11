@@ -38,7 +38,7 @@ export const obtenerPerfil = cache(async (): Promise<Perfil | null> => {
     .eq("id", uid)
     .maybeSingle<FilaPerfil>();
   let data = inicial.data;
-  if (inicial.error?.code === "42703" || inicial.error?.code === "PGRST204") {
+  if (inicial.error) {
     ({ data } = await supabase
       .from("perfiles")
       .select("id, nombre_completo, nombre_usuario, rol, activo, sede:sedes(id, nombre, tipo, activa)")
