@@ -2,7 +2,8 @@
 
 import { useEffect } from "react";
 import { Printer } from "lucide-react";
-import { ANCHOS_PAPEL, guardarAnchoPapel, useAnchoPapel, type AnchoPapel } from "@/lib/impresion/papel";
+import { ANCHOS_PAPEL, guardarAnchoPapel, type AnchoPapel } from "@/lib/impresion/papel";
+import { useAnchoPapel } from "@/lib/impresion/useAnchoPapel";
 import { cambiarAnchoPapelSede } from "@/app/admin/acciones-sedes";
 
 type Props = {

@@ -1,5 +1,3 @@
-import { useSyncExternalStore } from "react";
-
 /** Anchos de papel soportados por la impresora térmica. */
 export const ANCHOS_PAPEL = [80, 58] as const;
 export type AnchoPapel = (typeof ANCHOS_PAPEL)[number];
@@ -34,16 +32,12 @@ export function guardarAnchoPapel(ancho: AnchoPapel): void {
   window.dispatchEvent(new Event(EVENTO));
 }
 
-function suscribir(alCambiar: () => void): () => void {
+export function suscribirAnchoPapel(alCambiar: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
   window.addEventListener(EVENTO, alCambiar);
   window.addEventListener("storage", alCambiar);
   return () => {
     window.removeEventListener(EVENTO, alCambiar);
     window.removeEventListener("storage", alCambiar);
   };
-}
-
-/** Ancho de papel reactivo: cambia a la vez en tickets, reportes y vista previa. */
-export function useAnchoPapel(): AnchoPapel {
-  return useSyncExternalStore(suscribir, leerAnchoPapel, () => ANCHO_PAPEL_POR_DEFECTO);
 }

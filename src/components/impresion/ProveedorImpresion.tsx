@@ -4,7 +4,8 @@ import { createContext, use, useCallback, useEffect, useRef, useState, type Reac
 import { createPortal } from "react-dom";
 import { AperturaCajon, ReporteTurno, Ticket } from "./Documentos";
 import type { Documento } from "@/lib/dominio/documentos";
-import { guardarAnchoPapel, useAnchoPapel, type AnchoPapel } from "@/lib/impresion/papel";
+import { guardarAnchoPapel, type AnchoPapel } from "@/lib/impresion/papel";
+import { useAnchoPapel } from "@/lib/impresion/useAnchoPapel";
 
 type Imprimir = (doc: Documento) => void;
 

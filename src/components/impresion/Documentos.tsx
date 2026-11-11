@@ -7,7 +7,8 @@ import { clasificarDiferencia, nombreDiferencia, nombreMetodo } from "@/lib/domi
 import type { DatosReporte, DatosTicket } from "@/lib/dominio/documentos";
 import { CONSUMIDOR_FINAL, esConsumidorFinal } from "@/lib/dominio/cliente";
 import { describirOrigen } from "@/lib/dominio/cajaMayor";
-import { useAnchoPapel, type AnchoPapel } from "@/lib/impresion/papel";
+import { useAnchoPapel } from "@/lib/impresion/useAnchoPapel";
+import { type AnchoPapel } from "@/lib/impresion/papel";
 
 /* Documentos para impresora térmica: 80 mm (≈72 mm imprimibles) o 58 mm (≈48 mm imprimibles). */
 
