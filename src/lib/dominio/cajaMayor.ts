@@ -107,15 +107,16 @@ export function envioValido(contado: number, aMayor: number): boolean {
 
 export const quedaEnCaja = (contado: number, aMayor: number) => contado - aMayor;
 
-/** Base fija en cajón / caja menor al cerrar turno ($ 100.000). */
+/** Base fija permanente en cajón / caja menor ($ 100.000). No se cuenta al entrar ni al salir. */
 export const BASE_CAJA_MENOR = 100_000;
 
-/** Calcula la base que queda en cajón y lo que se transfiere a caja mayor al cerrar. */
-export function calcularCierreBase(contado: number, base: number = BASE_CAJA_MENOR): { baseCaja: number; aMayor: number } {
+/**
+ * Al cerrar turno, el cajero cuenta únicamente el efectivo de las ventas (sin contar los $100.000 de base).
+ * Todo lo contado va a caja mayor; la base física de $100.000 permanece en el cajón.
+ */
+export function calcularCierreBase(contado: number): { baseCaja: number; aMayor: number } {
   const c = Math.max(0, Math.floor(contado));
-  const baseCaja = Math.min(c, base);
-  const aMayor = Math.max(0, c - base);
-  return { baseCaja, aMayor };
+  return { baseCaja: BASE_CAJA_MENOR, aMayor: c };
 }
 
 export type TipoMovimiento = "cierre_turno" | "gasto" | "anulacion_gasto" | "admin";

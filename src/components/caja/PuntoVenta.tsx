@@ -555,7 +555,13 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
           return { error: "Aún hay ventas guardadas subiendo a la nube. Revisa la conexión e intenta de nuevo", reintentable: true };
         }
       }
-      const { data, error } = await supabase.rpc("cerrar_turno", { p_turno: turnoId, p_contado: contado, p_a_mayor: aMayor });
+      let contadoEnvio = contado;
+      const { data: turnoActual } = await supabase.from("turnos").select("base").eq("id", turnoId).maybeSingle();
+      const baseRegistrada = Number(turnoActual?.base ?? 0);
+      if (baseRegistrada > 0) {
+        contadoEnvio = contado + baseRegistrada;
+      }
+      const { data, error } = await supabase.rpc("cerrar_turno", { p_turno: turnoId, p_contado: contadoEnvio, p_a_mayor: aMayor });
       if (error) {
         if (esCodigo(error, "TURNO_CERRADO")) {
           turnoCerradoPorOtro();

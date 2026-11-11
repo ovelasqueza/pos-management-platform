@@ -19,8 +19,8 @@ type Props = {
 type Paso = "contar" | "confirmar";
 
 /**
- * Arqueo ciego: el cajero escribe lo contado sin ver el esperado.
- * Deja automáticamente la base fija de $100.000 en el cajón y envía el resto a caja mayor.
+ * Arqueo ciego: el cajero cuenta únicamente el efectivo de las ventas.
+ * La base fija de $100.000 nunca se cuenta al entrar ni al salir y permanece en el cajón.
  */
 export function CierreTurno({ abierto, onCerrar, onConfirmar }: Props) {
   const [contado, setContado] = useState("");
@@ -57,8 +57,10 @@ export function CierreTurno({ abierto, onCerrar, onConfirmar }: Props) {
     <Modal abierto={abierto} titulo="Cerrar turno" onCerrar={cerrar} ancho="sm">
       {paso === "contar" && (
         <div className="flex flex-col gap-3">
-          <p className="text-sm text-texto-2">Cuenta el efectivo del cajón y escríbelo.</p>
-          <PantallaMonto etiqueta="Efectivo contado" texto={contado} />
+          <p className="text-sm text-texto-2">
+            Cuenta el dinero de las ventas (los $100.000 de base se quedan en el cajón).
+          </p>
+          <PantallaMonto etiqueta="Efectivo de ventas" texto={contado} />
           <TecladoNumerico valor={contado} onCambiar={setContado} onEnter={() => contado !== "" && setPaso("confirmar")} />
           <Boton variante="primario" tamano="lg" disabled={contado === ""} onClick={() => setPaso("confirmar")}>
             Continuar
@@ -69,7 +71,7 @@ export function CierreTurno({ abierto, onCerrar, onConfirmar }: Props) {
       {paso === "confirmar" && (
         <div className="flex flex-col gap-4">
           <div className="flex flex-col items-center gap-1 text-center">
-            <p className="text-sm font-semibold text-texto-3">EFECTIVO CONTADO</p>
+            <p className="text-sm font-semibold text-texto-3">EFECTIVO DE VENTAS</p>
             <p className="num text-[40px] leading-[48px] font-bold text-primario-activo">
               {formatearPesos(valorContado)}
             </p>
@@ -77,19 +79,19 @@ export function CierreTurno({ abierto, onCerrar, onConfirmar }: Props) {
 
           <div className="flex flex-col gap-2 rounded-tarjeta border border-borde bg-suave p-3 text-sm">
             <div className="flex items-center justify-between">
-              <span className="text-texto-2">Base en caja menor (cajón)</span>
-              <span className="num font-semibold text-texto">{formatearPesos(baseCaja)}</span>
-            </div>
-            <div className="flex items-center justify-between border-t border-borde pt-2">
               <span className="flex items-center gap-1 font-medium text-texto">
-                <Landmark size={16} className="text-primario" aria-hidden /> A caja mayor (resto)
+                <Landmark size={16} className="text-primario" aria-hidden /> A caja mayor
               </span>
               <span className="num font-bold text-primario-activo">{formatearPesos(aMayor)}</span>
+            </div>
+            <div className="flex items-center justify-between border-t border-borde pt-2">
+              <span className="text-texto-2">Base fija permanente en cajón</span>
+              <span className="num font-semibold text-texto">{formatearPesos(baseCaja)}</span>
             </div>
           </div>
 
           <p className="text-center text-xs text-texto-3">
-            QR y tarjeta pasan solos a caja mayor.
+            El efectivo de ventas va a caja mayor; la base de $100.000 se queda en el cajón.
           </p>
 
           {error && (

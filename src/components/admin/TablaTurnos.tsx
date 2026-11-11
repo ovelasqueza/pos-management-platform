@@ -70,13 +70,13 @@ function CerrarTurno({ turno, cerrar, alCerrar }: { turno: TurnoFila; cerrar: ()
   const [pendiente, iniciar] = useTransition();
 
   const contadoActual = leerPesos(texto, 0);
-  const mayorPorDefecto = contadoActual !== null ? Math.max(0, contadoActual - 100_000) : 0;
+  const mayorPorDefecto = contadoActual !== null ? contadoActual : 0;
   const mayorActual = textoMayor.trim() === "" ? mayorPorDefecto : leerPesos(textoMayor, 0);
 
   function confirmar() {
     const contado = leerPesos(texto, 0);
     if (contado === null) return setError("Escribe el efectivo contado");
-    const aMayor = textoMayor.trim() === "" ? Math.max(0, contado - 100_000) : leerPesos(textoMayor, 0);
+    const aMayor = textoMayor.trim() === "" ? contado : leerPesos(textoMayor, 0);
     if (aMayor === null || !envioValido(contado, aMayor)) return setError("A caja mayor no puede ser más que lo contado");
     setError(undefined);
     iniciar(async () => {

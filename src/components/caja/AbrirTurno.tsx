@@ -10,7 +10,6 @@ import type { DatosReporte } from "@/lib/dominio/documentos";
 import { Boton } from "@/components/ui/Boton";
 import { Aviso } from "@/components/ui/Aviso";
 import { useImprimir } from "@/components/impresion/ProveedorImpresion";
-import { PantallaMonto, TecladoNumerico } from "./TecladoNumerico";
 
 type Props = {
   sede: string;
@@ -18,25 +17,19 @@ type Props = {
   ultimoReporte: DatosReporte | null;
   /** Turno abierto por otro cajero en esta sede (una caja por sede) */
   ocupada: { cajero: string; abierto_en: string } | null;
-  /** Lo que quedó en caja en el último cierre de la sede (el cajero la puede cambiar) */
-  baseSugerida: number | null;
+  baseSugerida?: number | null;
 };
 
-export function AbrirTurno({ sede, cajero, ultimoReporte, ocupada, baseSugerida }: Props) {
+export function AbrirTurno({ sede, cajero, ultimoReporte, ocupada }: Props) {
   const router = useRouter();
   const imprimir = useImprimir();
-  const [base, setBase] = useState(baseSugerida === null ? "" : String(baseSugerida));
   const [error, setError] = useState<string>();
   const [pendiente, iniciar] = useTransition();
 
   function abrir() {
-    if (base === "") {
-      setError("Escribe la base del cajón (puede ser 0)");
-      return;
-    }
     setError(undefined);
     iniciar(async () => {
-      const { error: e } = await crearClienteNavegador().rpc("abrir_turno", { p_base: Number(base) });
+      const { error: e } = await crearClienteNavegador().rpc("abrir_turno", { p_base: 0 });
       if (e && esCodigo(e, "CAJA_OCUPADA")) {
         router.refresh(); // muestra la pantalla de caja ocupada
         return;
@@ -91,17 +84,37 @@ export function AbrirTurno({ sede, cajero, ultimoReporte, ocupada, baseSugerida 
             </div>
           </div>
         ) : (
-          <div className="flex w-full max-w-sm flex-col gap-4">
-            <h1 className="text-center text-2xl font-semibold">Abrir turno</h1>
-            <PantallaMonto etiqueta="Base del cajón" texto={base} />
-            {baseSugerida !== null && (
-              <p className="-mt-2 text-center text-sm text-texto-3">Quedó en el cajón en el último cierre</p>
-            )}
-            <TecladoNumerico valor={base} onCambiar={setBase} onEnter={() => !pendiente && abrir()} />
+          <div className="flex w-full max-w-sm flex-col gap-4 text-center">
+            <span className="mx-auto flex size-16 items-center justify-center rounded-full bg-exito-suave text-primario">
+              <LockOpen size={32} aria-hidden />
+            </span>
+            <div>
+              <h1 className="text-2xl font-bold">Abrir turno</h1>
+              <p className="mt-1 text-sm text-texto-2">
+                {cajero} · {sede}
+              </p>
+            </div>
+
+            <div className="rounded-tarjeta border border-borde bg-suave p-3 text-sm">
+              <p className="text-xs font-semibold uppercase text-texto-3">Base fija en cajón</p>
+              <p className="num text-2xl font-bold text-texto">$ 100.000</p>
+              <p className="mt-1 text-xs text-texto-3">
+                Permanente en cajón · No se cuenta al entrar ni al salir
+              </p>
+            </div>
+
             {error && <Aviso>{error}</Aviso>}
-            <Boton variante="primario" tamano="lg" disabled={pendiente} onClick={abrir} icono={<LockOpen size={22} aria-hidden />}>
-              {pendiente ? "Abriendo…" : "Abrir turno"}
+
+            <Boton
+              variante="primario"
+              tamano="lg"
+              disabled={pendiente}
+              onClick={abrir}
+              icono={<LockOpen size={20} aria-hidden />}
+            >
+              {pendiente ? "Abriendo…" : "Iniciar turno"}
             </Boton>
+
             {ultimoReporte && (
               <Boton
                 variante="fantasma"

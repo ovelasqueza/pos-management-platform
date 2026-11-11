@@ -65,11 +65,11 @@ describe("envío al cerrar", () => {
     expect(envioValido(50000, -1)).toBe(false);
     expect(quedaEnCaja(50000, 30000)).toBe(20000);
   });
-  it("calcularCierreBase deja 100.000 de base y el resto a caja mayor", () => {
-    expect(calcularCierreBase(350000)).toEqual({ baseCaja: 100000, aMayor: 250000 });
-    expect(calcularCierreBase(100000)).toEqual({ baseCaja: 100000, aMayor: 0 });
-    expect(calcularCierreBase(60000)).toEqual({ baseCaja: 60000, aMayor: 0 });
-    expect(calcularCierreBase(0)).toEqual({ baseCaja: 0, aMayor: 0 });
+  it("calcularCierreBase mantiene 100.000 permanente y envía lo contado a caja mayor", () => {
+    expect(calcularCierreBase(350000)).toEqual({ baseCaja: 100000, aMayor: 350000 });
+    expect(calcularCierreBase(100000)).toEqual({ baseCaja: 100000, aMayor: 100000 });
+    expect(calcularCierreBase(60000)).toEqual({ baseCaja: 100000, aMayor: 60000 });
+    expect(calcularCierreBase(0)).toEqual({ baseCaja: 100000, aMayor: 0 });
   });
 });
 
