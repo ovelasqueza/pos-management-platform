@@ -638,11 +638,13 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
               </button>
             )}
             <a
-              href="https://wa.me/573108844273?text=Hola,%20necesito%20soporte%20en%20el%20punto%20de%20venta."
+              href={`https://wa.me/573108844273?text=${encodeURIComponent(
+                `Hola, necesito soporte en el punto de venta. Sede: ${sede}.`
+              )}`}
               target="_blank"
               rel="noopener noreferrer"
               className={botonDestacado}
-              title="Contactar soporte por WhatsApp (+57 310 8844273)"
+              title={`Contactar soporte por WhatsApp (+57 310 8844273) · Sede: ${sede}`}
             >
               <Headphones size={22} aria-hidden />
               <span>Soporte</span>
