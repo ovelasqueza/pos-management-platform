@@ -33,7 +33,7 @@ export default async function PaginaProductos({ params, searchParams }: PageProp
           </div>
           <div className="flex gap-2">
             <GestorCategorias tipo={sede.tipo} categorias={categorias} />
-            <BotonNuevoProducto tipo={sede.tipo} categorias={opciones} />
+            <BotonNuevoProducto tipo={sede.tipo} categorias={opciones} sedeId={sede.id} />
           </div>
         </div>
         <TablaProductosSede key={sede.id} sedeId={sede.id} tipo={sede.tipo} filas={filas} categorias={opciones} />

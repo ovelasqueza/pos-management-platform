@@ -27,12 +27,14 @@ function Formulario({
   tipo,
   categorias,
   producto,
+  sedeId,
   cerrar,
   onEliminar,
 }: {
   tipo: TipoSede;
   categorias: OpcionCategoria[];
   producto?: ProductoEditable;
+  sedeId?: string;
   cerrar: () => void;
   onEliminar?: () => void;
 }) {
@@ -54,6 +56,12 @@ function Formulario({
   return (
     <form action={enviar} className="flex flex-col gap-4">
       {producto ? <input type="hidden" name="id" value={producto.id} /> : <input type="hidden" name="tipo" value={tipo} />}
+      {sedeId && <input type="hidden" name="sedeId" value={sedeId} />}
+      {!producto && sedeId && (
+        <p className="-mt-1 text-xs text-texto-3">
+          El producto se creará activo en esta sede y desactivado en las demás sedes.
+        </p>
+      )}
 
       <div className="flex items-center gap-4">
         <MiniaturaProducto nombre={producto?.nombre ?? "?"} url={quitar ? null : vistaPrevia} tamano={72} />
@@ -164,7 +172,15 @@ function Formulario({
   );
 }
 
-export function BotonNuevoProducto({ tipo, categorias }: { tipo: TipoSede; categorias: OpcionCategoria[] }) {
+export function BotonNuevoProducto({
+  tipo,
+  categorias,
+  sedeId,
+}: {
+  tipo: TipoSede;
+  categorias: OpcionCategoria[];
+  sedeId?: string;
+}) {
   const [abierto, setAbierto] = useState(false);
   return (
     <>
@@ -172,7 +188,7 @@ export function BotonNuevoProducto({ tipo, categorias }: { tipo: TipoSede; categ
         Producto
       </Boton>
       <Modal abierto={abierto} titulo="Nuevo producto" onCerrar={() => setAbierto(false)}>
-        {abierto && <Formulario tipo={tipo} categorias={categorias} cerrar={() => setAbierto(false)} />}
+        {abierto && <Formulario tipo={tipo} categorias={categorias} sedeId={sedeId} cerrar={() => setAbierto(false)} />}
       </Modal>
     </>
   );

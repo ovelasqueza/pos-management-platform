@@ -56,6 +56,7 @@ export async function crearProducto(_: EstadoFormulario, f: FormData): Promise<E
   }
 
   const d = datos.data;
+  const sedeId = texto(f, "sedeId");
   const supabase = await crearClienteServidor();
   const { data: creado, error } = await supabase
     .from("productos")
@@ -63,6 +64,15 @@ export async function crearProducto(_: EstadoFormulario, f: FormData): Promise<E
     .select("id")
     .single();
   if (error) return errorProducto(error);
+
+  if (sedeId) {
+    // Si se crea dentro de una sede específica, desactivar en las demás sedes
+    await supabase
+      .from("productos_sede")
+      .update({ habilitado: false })
+      .eq("producto_id", creado.id)
+      .neq("sede_id", sedeId);
+  }
 
   if (img) {
     const path = await subirImagen(supabase, d.tipo, creado.id, img);
