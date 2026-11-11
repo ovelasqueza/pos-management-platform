@@ -17,6 +17,18 @@ param(
   )
 )
 
+# Normaliza las direcciones para que solo guarden protocolo://host (sin rutas como /caja)
+function NormalizarOrigen([string]$u) {
+  if (-not $u) { return '' }
+  try {
+    $uri = [System.Uri]$u.Trim()
+    return "$($uri.Scheme)://$($uri.Authority)".ToLowerInvariant()
+  } catch {
+    return $u.Trim().TrimEnd('/').ToLowerInvariant()
+  }
+}
+$Origenes = @($Origenes | ForEach-Object { NormalizarOrigen $_ } | Where-Object { $_ } | Select-Object -Unique)
+
 $ErrorActionPreference = 'Stop'
 
 # Usar C:\Users\Public\POS-Cajon permite que funcione aunque se instale como Administrador

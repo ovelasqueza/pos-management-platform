@@ -115,16 +115,27 @@ function LeerConfig {
   }
 }
 
+function NormalizarOrigen([string]$u) {
+  if (-not $u) { return '' }
+  try {
+    $uri = [System.Uri]$u.Trim()
+    return "$($uri.Scheme)://$($uri.Authority)".ToLowerInvariant()
+  } catch {
+    return $u.Trim().TrimEnd('/').ToLowerInvariant()
+  }
+}
+
 $cfg = LeerConfig
 $puerto = if ($cfg.puerto) { [int]$cfg.puerto } else { 17777 }
-$origenes = @($cfg.origenes | Where-Object { $_ })
+$origenes = @($cfg.origenes | ForEach-Object { NormalizarOrigen $_ } | Where-Object { $_ } | Select-Object -Unique)
 $hostsValidos = @("127.0.0.1:$puerto", "localhost:$puerto")
 
 # Solo las direcciones de la lista del instalador: sin origen o con una página desconocida se
 # rechaza, así otra web no puede abrir el cajón ni imprimir.
 function EsOrigenPermitido([string]$origen) {
   if (-not $origen) { return $false }
-  return ($origenes -contains $origen)
+  $norm = NormalizarOrigen $origen
+  return ($origenes -contains $norm)
 }
 
 $script:impresoraCache = if ($cfg.impresora) { [string]$cfg.impresora } else { $null }
