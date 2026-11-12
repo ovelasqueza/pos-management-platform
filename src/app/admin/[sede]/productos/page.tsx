@@ -36,7 +36,14 @@ export default async function PaginaProductos({ params, searchParams }: PageProp
             <BotonNuevoProducto tipo={sede.tipo} categorias={opciones} sedeId={sede.id} />
           </div>
         </div>
-        <TablaProductosSede key={sede.id} sedeId={sede.id} tipo={sede.tipo} filas={filas} categorias={opciones} />
+        <TablaProductosSede
+          key={sede.id}
+          sedeId={sede.id}
+          sedeNombre={sede.nombre}
+          tipo={sede.tipo}
+          filas={filas}
+          categorias={opciones}
+        />
       </section>
     );
   }

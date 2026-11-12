@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { RotateCw, Search, Tag } from "lucide-react";
+import { FileSpreadsheet, RotateCw, Search, Tag } from "lucide-react";
 import { crearClienteNavegador } from "@/lib/supabase/browser";
 import { formatearPesos, leerPesos } from "@/lib/dominio/dinero";
 import { normalizarTexto } from "@/lib/dominio/producto";
+import { armarCsvProductosSede, nombreArchivoCsvProductos } from "@/lib/dominio/catalogoExportar";
 import type { TipoSede } from "@/lib/dominio/sede";
+import { Boton } from "@/components/ui/Boton";
 import { CampoAutoguardado } from "@/components/ui/CampoAutoguardado";
 import { Interruptor } from "@/components/ui/Interruptor";
 import { FotoProducto } from "@/components/admin/FotoProducto";
@@ -71,13 +73,14 @@ function Vende({ fila, guardar }: { fila: FilaProductoSede; guardar: (v: boolean
 
 type Props = {
   sedeId: string;
+  sedeNombre?: string;
   tipo: TipoSede;
   filas: FilaProductoSede[];
   categorias: OpcionCategoria[];
 };
 
 /** Productos de una sede: datos del producto + vende + precio de venta + costo, todo en una tabla. */
-export function TablaProductosSede({ sedeId, tipo, filas, categorias }: Props) {
+export function TablaProductosSede({ sedeId, sedeNombre, tipo, filas, categorias }: Props) {
   const [pestana, setPestana] = useState<"activos" | "desactivados">("activos");
   const [filasLocales, setFilasLocales] = useState(filas);
   const [busqueda, setBusqueda] = useState("");
@@ -152,6 +155,26 @@ export function TablaProductosSede({ sedeId, tipo, filas, categorias }: Props) {
     return ok;
   };
 
+  const descargarExcel = () => {
+    const csv = armarCsvProductosSede({
+      sede: sedeNombre ?? "Sede",
+      filas: filasLocales.map((f) => ({
+        nombre: f.nombre,
+        categoria: f.categoria,
+        precioVenta: f.precioVenta,
+        costo: f.costo,
+        habilitado: f.habilitado,
+        activo: f.activo,
+      })),
+    });
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = nombreArchivoCsvProductos(sedeNombre ?? "sede");
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex flex-col gap-3">
       {/* Pestañas para separar productos activos de desactivados */}
@@ -198,6 +221,15 @@ export function TablaProductosSede({ sedeId, tipo, filas, categorias }: Props) {
             </span>
           </button>
         </div>
+
+        <Boton
+          variante="secundario"
+          icono={<FileSpreadsheet size={18} className="text-exito" aria-hidden />}
+          onClick={descargarExcel}
+          title="Descargar lista de productos en Excel (CSV)"
+        >
+          Descargar Excel
+        </Boton>
       </div>
 
       <div className="flex flex-wrap gap-2">
