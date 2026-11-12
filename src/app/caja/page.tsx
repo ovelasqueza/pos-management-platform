@@ -4,10 +4,9 @@ import { requerirCajero } from "@/lib/sesion";
 import { COOKIE_DISPOSITIVO } from "@/lib/dispositivo";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { cargarProductosVendibles } from "@/lib/caja/productos";
-import type { DatosReporte } from "@/lib/dominio/documentos";
 import { ProveedorImpresion } from "@/components/impresion/ProveedorImpresion";
-import { AbrirTurno } from "@/components/caja/AbrirTurno";
-import { PuntoVenta } from "@/components/caja/PuntoVenta";
+import { AbrirTurnoDinamico } from "@/components/caja/AbrirTurnoDinamico";
+import { PuntoVentaDinamico } from "@/components/caja/PuntoVentaDinamico";
 
 export default async function Caja() {
   const cajero = await requerirCajero();
@@ -27,29 +26,27 @@ export default async function Caja() {
   if (turno?.dispositivo && turno.dispositivo !== equipo) redirect("/salir?motivo=otro-equipo");
 
   if (!turno) {
-    const [{ data: ultimo }, { data: ocupada }, { data: sugerida }] = await Promise.all([
+    const [{ data: ultimoCerrado }, { data: ocupada }] = await Promise.all([
+      // Verificamos si existe un cierre previo sin transferir el reporte completo en el SSR
       supabase
         .from("turnos")
-        .select("reporte")
+        .select("id")
         .eq("cajero_id", cajero.id)
         .not("cerrado_en", "is", null)
         .order("cerrado_en", { ascending: false })
         .limit(1)
-        .maybeSingle<{ reporte: DatosReporte }>(),
+        .maybeSingle<{ id: string }>(),
       // Una caja por sede: ¿otro cajero tiene el turno abierto?
       supabase.rpc("turno_abierto_en_mi_sede"),
-      // Lo que quedó en caja en el último cierre de la sede (spec 06)
-      supabase.rpc("base_sugerida"),
     ]);
 
     return (
       <ProveedorImpresion anchoSede={cajero.sede.anchoPapel}>
-        <AbrirTurno
+        <AbrirTurnoDinamico
           sede={cajero.sede.nombre}
           cajero={cajero.nombreCompleto}
-          ultimoReporte={ultimo?.reporte ?? null}
+          tieneUltimoReporte={Boolean(ultimoCerrado?.id)}
           ocupada={(ocupada as { cajero: string; abierto_en: string } | null) ?? null}
-          baseSugerida={typeof sugerida === "number" ? sugerida : null}
         />
       </ProveedorImpresion>
     );
@@ -59,7 +56,7 @@ export default async function Caja() {
 
   return (
     <ProveedorImpresion anchoSede={cajero.sede.anchoPapel}>
-      <PuntoVenta
+      <PuntoVentaDinamico
         key={turno.id}
         turnoId={turno.id}
         sede={cajero.sede.nombre}

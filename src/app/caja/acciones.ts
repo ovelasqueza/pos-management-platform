@@ -6,6 +6,7 @@ import { requerirCajero } from "@/lib/sesion";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { COOKIE_DISPOSITIVO, DURACION_COOKIE, esDispositivoValido } from "@/lib/dispositivo";
 import { nuevoUUID } from "@/lib/uuid";
+import type { DatosReporte } from "@/lib/dominio/documentos";
 
 export type ResultadoAbrirTurno = {
   ok: boolean;
@@ -83,5 +84,23 @@ export async function abrirTurnoAction(): Promise<ResultadoAbrirTurno> {
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Error inesperado al abrir turno" };
+  }
+}
+
+export async function obtenerUltimoReporteAction(): Promise<DatosReporte | null> {
+  try {
+    const cajero = await requerirCajero();
+    const admin = crearClienteAdmin();
+    const { data } = await admin
+      .from("turnos")
+      .select("reporte")
+      .eq("cajero_id", cajero.id)
+      .not("cerrado_en", "is", null)
+      .order("cerrado_en", { ascending: false })
+      .limit(1)
+      .maybeSingle<{ reporte: DatosReporte }>();
+    return data?.reporte ?? null;
+  } catch {
+    return null;
   }
 }

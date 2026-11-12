@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LockKeyhole, LockOpen, LogOut, Printer, RefreshCw, UserRoundCog } from "lucide-react";
-import { abrirTurnoAction } from "@/app/caja/acciones";
+import { abrirTurnoAction, obtenerUltimoReporteAction } from "@/app/caja/acciones";
 import { formatearHora } from "@/lib/dominio/fechas";
 import type { DatosReporte } from "@/lib/dominio/documentos";
 import { Boton } from "@/components/ui/Boton";
@@ -13,17 +13,35 @@ import { useImprimir } from "@/components/impresion/ProveedorImpresion";
 type Props = {
   sede: string;
   cajero: string;
-  ultimoReporte: DatosReporte | null;
+  tieneUltimoReporte?: boolean;
+  ultimoReporte?: DatosReporte | null;
   /** Turno abierto por otro cajero en esta sede (una caja por sede) */
   ocupada: { cajero: string; abierto_en: string } | null;
   baseSugerida?: number | null;
 };
 
-export function AbrirTurno({ sede, cajero, ultimoReporte, ocupada }: Props) {
+export function AbrirTurno({ sede, cajero, tieneUltimoReporte, ultimoReporte, ocupada }: Props) {
   const router = useRouter();
   const imprimir = useImprimir();
   const [error, setError] = useState<string>();
   const [pendiente, iniciar] = useTransition();
+  const [imprimiendoReporte, setImprimiendoReporte] = useState(false);
+
+  async function reimprimirReporte() {
+    setImprimiendoReporte(true);
+    try {
+      if (ultimoReporte) {
+        imprimir({ tipo: "reporte", datos: ultimoReporte, copia: true });
+        return;
+      }
+      const reporte = await obtenerUltimoReporteAction();
+      if (reporte) {
+        imprimir({ tipo: "reporte", datos: reporte, copia: true });
+      }
+    } finally {
+      setImprimiendoReporte(false);
+    }
+  }
 
   function abrir() {
     setError(undefined);
@@ -114,13 +132,14 @@ export function AbrirTurno({ sede, cajero, ultimoReporte, ocupada }: Props) {
               {pendiente ? "Abriendo…" : "Iniciar turno"}
             </Boton>
 
-            {ultimoReporte && (
+            {(tieneUltimoReporte || ultimoReporte) && (
               <Boton
                 variante="fantasma"
+                disabled={imprimiendoReporte}
                 icono={<Printer size={20} aria-hidden />}
-                onClick={() => imprimir({ tipo: "reporte", datos: ultimoReporte, copia: true })}
+                onClick={reimprimirReporte}
               >
-                Reimprimir último reporte
+                {imprimiendoReporte ? "Cargando reporte…" : "Reimprimir último reporte"}
               </Boton>
             )}
           </div>
