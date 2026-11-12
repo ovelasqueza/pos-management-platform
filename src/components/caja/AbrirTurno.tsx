@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LockKeyhole, LockOpen, LogOut, Printer, RefreshCw, UserRoundCog } from "lucide-react";
 import { crearClienteNavegador } from "@/lib/supabase/browser";
-import { esCodigo, mensajeDeError } from "@/lib/dominio/errores";
+import { esCodigo, esErrorDeRed, mensajeDeError } from "@/lib/dominio/errores";
 import { formatearHora } from "@/lib/dominio/fechas";
 import type { DatosReporte } from "@/lib/dominio/documentos";
 import { Boton } from "@/components/ui/Boton";
@@ -35,7 +35,11 @@ export function AbrirTurno({ sede, cajero, ultimoReporte, ocupada }: Props) {
         return;
       }
       if (e && !esCodigo(e, "TURNO_YA_ABIERTO")) {
-        setError(mensajeDeError(e, "No se pudo abrir el turno. Revisa la conexión"));
+        if (esErrorDeRed(e)) {
+          setError("No se pudo conectar con el servidor. Revisa tu conexión a internet");
+        } else {
+          setError(mensajeDeError(e, e.message || "No se pudo abrir el turno"));
+        }
         return;
       }
       router.refresh();
