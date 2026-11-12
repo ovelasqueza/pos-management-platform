@@ -7,11 +7,12 @@ import { SUPABASE_URL } from "./config";
  * (crear usuarios, cambiar contraseñas, bloquear sesiones) y siempre después
  * de verificar que quien llama es admin.
  */
-export function crearClienteAdmin() {
+export function crearClienteAdmin(headers?: Record<string, string>) {
   const clave = process.env.SUPABASE_SECRET_KEY;
   if (!clave) throw new Error("Falta configurar la variable SUPABASE_SECRET_KEY en Cloudflare (Workers > Configuración > Variables y secretos)");
 
   return createClient(SUPABASE_URL, clave, {
     auth: { persistSession: false, autoRefreshToken: false },
+    ...(headers ? { global: { headers } } : {}),
   });
 }
