@@ -1,6 +1,7 @@
 import "server-only";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { urlImagen } from "@/lib/supabase/storage";
+import type { ModalidadProducto } from "@/lib/dominio/producto";
 import type { TipoSede } from "@/lib/dominio/sede";
 
 export type Categoria = { id: string; nombre: string; productos: number };
@@ -13,6 +14,7 @@ export type Producto = {
   precioReferencia: number;
   imagenUrl: string | null;
   activo: boolean;
+  modalidad: ModalidadProducto | null;
 };
 
 const porNombre = (a: { nombre: string }, b: { nombre: string }) =>
@@ -31,25 +33,33 @@ export async function listarCategorias(tipo: TipoSede): Promise<Categoria[]> {
     .sort(porNombre);
 }
 
+type FilaProductoAdmin = {
+  id: string;
+  nombre: string;
+  categoria_id: string | null;
+  precio_referencia: number;
+  imagen_path: string | null;
+  activo: boolean;
+  modalidad?: ModalidadProducto | null;
+  categoria: { nombre: string } | null;
+};
+
 export async function listarProductos(tipo: TipoSede): Promise<Producto[]> {
   const supabase = await crearClienteServidor();
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("productos")
-    .select("id, nombre, categoria_id, precio_referencia, imagen_path, activo, categoria:categorias(nombre)")
+    .select("id, nombre, categoria_id, precio_referencia, imagen_path, activo, modalidad, categoria:categorias(nombre)")
     .eq("tipo", tipo)
-    .returns<
-      {
-        id: string;
-        nombre: string;
-        categoria_id: string | null;
-        precio_referencia: number;
-        imagen_path: string | null;
-        activo: boolean;
-        categoria: { nombre: string } | null;
-      }[]
-    >();
+    .returns<FilaProductoAdmin[]>();
+  if (error?.code === "42703") {
+    ({ data, error } = await supabase
+      .from("productos")
+      .select("id, nombre, categoria_id, precio_referencia, imagen_path, activo, categoria:categorias(nombre)")
+      .eq("tipo", tipo)
+      .returns<FilaProductoAdmin[]>());
+  }
   if (error) throw new Error(`No se pudieron cargar los productos: ${error.message}`);
-  return data
+  return (data ?? [])
     .map((p) => ({
       id: p.id,
       nombre: p.nombre,
@@ -58,6 +68,7 @@ export async function listarProductos(tipo: TipoSede): Promise<Producto[]> {
       precioReferencia: p.precio_referencia,
       imagenUrl: urlImagen(p.imagen_path),
       activo: p.activo,
+      modalidad: p.modalidad ?? null,
     }))
     .sort((a, b) => Number(b.activo) - Number(a.activo) || porNombre(a, b));
 }
@@ -73,41 +84,53 @@ export type FilaProductoSede = {
   habilitado: boolean;
   precioVenta: number;
   costo: number | null;
+  modalidad: ModalidadProducto | null;
+};
+
+type FilaPrecioSede = {
+  producto_id: string;
+  habilitado: boolean;
+  precio_venta: number;
+  producto: {
+    nombre: string;
+    activo: boolean;
+    categoria_id: string | null;
+    precio_referencia: number;
+    imagen_path: string | null;
+    modalidad?: ModalidadProducto | null;
+    categoria: { nombre: string } | null;
+  };
 };
 
 /** Productos del catálogo de una sede con sus datos, habilitación, precio de venta y costo. */
 export async function listarProductosSede(sedeId: string): Promise<FilaProductoSede[]> {
   const supabase = await crearClienteServidor();
-  const [precios, costos] = await Promise.all([
+  const [preciosInicial, costos] = await Promise.all([
     supabase
+      .from("productos_sede")
+      .select(
+        "producto_id, habilitado, precio_venta, producto:productos(nombre, activo, categoria_id, precio_referencia, imagen_path, modalidad, categoria:categorias(nombre))",
+      )
+      .eq("sede_id", sedeId)
+      .returns<FilaPrecioSede[]>(),
+    supabase.from("costos_producto_sede").select("producto_id, costo").eq("sede_id", sedeId),
+  ]);
+  let precios = preciosInicial;
+  if (precios.error?.code === "42703") {
+    precios = await supabase
       .from("productos_sede")
       .select(
         "producto_id, habilitado, precio_venta, producto:productos(nombre, activo, categoria_id, precio_referencia, imagen_path, categoria:categorias(nombre))",
       )
       .eq("sede_id", sedeId)
-      .returns<
-        {
-          producto_id: string;
-          habilitado: boolean;
-          precio_venta: number;
-          producto: {
-            nombre: string;
-            activo: boolean;
-            categoria_id: string | null;
-            precio_referencia: number;
-            imagen_path: string | null;
-            categoria: { nombre: string } | null;
-          };
-        }[]
-      >(),
-    supabase.from("costos_producto_sede").select("producto_id, costo").eq("sede_id", sedeId),
-  ]);
+      .returns<FilaPrecioSede[]>();
+  }
   if (precios.error) throw new Error(`No se pudieron cargar los productos: ${precios.error.message}`);
   if (costos.error) throw new Error(`No se pudieron cargar los costos: ${costos.error.message}`);
 
   const costoDe = new Map(costos.data.map((c) => [c.producto_id as string, c.costo as number]));
 
-  return precios.data
+  return (precios.data ?? [])
     .map((p) => ({
       productoId: p.producto_id,
       nombre: p.producto.nombre,
@@ -119,6 +142,7 @@ export async function listarProductosSede(sedeId: string): Promise<FilaProductoS
       habilitado: p.habilitado,
       precioVenta: p.precio_venta,
       costo: costoDe.get(p.producto_id) ?? null,
+      modalidad: p.producto.modalidad ?? null,
     }))
     .sort((a, b) => Number(b.activo) - Number(a.activo) || porNombre(a, b));
 }

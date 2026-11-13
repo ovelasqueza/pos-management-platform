@@ -102,6 +102,16 @@ export default async function PaginaProductos({ params, searchParams }: PageProp
                   <div className="flex items-center gap-3">
                     <FotoProducto id={p.id} nombre={p.nombre} url={p.imagenUrl} />
                     <span className="font-medium">{p.nombre}</span>
+                    {p.modalidad === "mesa" && (
+                      <span className="rounded-control bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-800">
+                        Para la mesa
+                      </span>
+                    )}
+                    {p.modalidad === "llevar" && (
+                      <span className="rounded-control bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                        Para llevar
+                      </span>
+                    )}
                     {!p.activo && <span className="rounded-control bg-suave px-2 py-0.5 text-xs">Inactivo</span>}
                   </div>
                 </td>

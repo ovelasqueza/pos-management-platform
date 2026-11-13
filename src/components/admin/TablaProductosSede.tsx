@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FileSpreadsheet, RotateCw, Search, Tag } from "lucide-react";
 import { crearClienteNavegador } from "@/lib/supabase/browser";
 import { formatearPesos, leerPesos } from "@/lib/dominio/dinero";
-import { normalizarTexto } from "@/lib/dominio/producto";
+import { normalizarTexto, type ModalidadProducto } from "@/lib/dominio/producto";
 import { armarCsvProductosSede, nombreArchivoCsvProductos } from "@/lib/dominio/catalogoExportar";
 import type { TipoSede } from "@/lib/dominio/sede";
 import { Boton } from "@/components/ui/Boton";
@@ -24,6 +24,7 @@ export type FilaProductoSede = {
   habilitado: boolean;
   precioVenta: number;
   costo: number | null;
+  modalidad?: ModalidadProducto | null;
 };
 
 const sinSigno = (v: number) => formatearPesos(v).replace("$ ", "");
@@ -284,9 +285,19 @@ export function TablaProductosSede({ sedeId, sedeNombre, tipo, filas, categorias
                     <FotoProducto id={f.productoId} nombre={f.nombre} url={f.imagenUrl} tamano={120} />
                     <div className="min-w-0">
                       <p className={`font-medium ${f.activo ? "" : "text-texto-3"}`}>{f.nombre}</p>
-                      <p className="text-xs text-texto-3">
-                        {f.categoria ?? "Sin categoría"}
-                        {!f.activo && " · Inactivo en todas las sedes"}
+                      <p className="flex flex-wrap items-center gap-1.5 text-xs text-texto-3">
+                        <span>{f.categoria ?? "Sin categoría"}</span>
+                        {f.modalidad === "mesa" && (
+                          <span className="rounded-control bg-sky-100 px-1.5 py-0.5 font-semibold text-sky-800">
+                            Para la mesa
+                          </span>
+                        )}
+                        {f.modalidad === "llevar" && (
+                          <span className="rounded-control bg-amber-100 px-1.5 py-0.5 font-semibold text-amber-800">
+                            Para llevar
+                          </span>
+                        )}
+                        {!f.activo && <span>· Inactivo en todas las sedes</span>}
                       </p>
                     </div>
                   </div>
@@ -326,6 +337,7 @@ export function TablaProductosSede({ sedeId, sedeNombre, tipo, filas, categorias
                       precioVenta: f.precioVenta,
                       imagenUrl: f.imagenUrl,
                       activo: f.habilitado,
+                      modalidad: f.modalidad,
                     }}
                   />
                 </td>

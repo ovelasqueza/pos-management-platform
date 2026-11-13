@@ -45,6 +45,7 @@ export async function crearProducto(_: EstadoFormulario, f: FormData): Promise<E
     nombre: texto(f, "nombre"),
     categoriaId: texto(f, "categoriaId"),
     precioReferencia: texto(f, "precioReferencia"),
+    modalidad: texto(f, "modalidad"),
     tipo: texto(f, "tipo"),
   });
   const img = archivo(f, "imagen");
@@ -60,7 +61,13 @@ export async function crearProducto(_: EstadoFormulario, f: FormData): Promise<E
   const supabase = await crearClienteServidor();
   const { data: creado, error } = await supabase
     .from("productos")
-    .insert({ tipo: d.tipo, nombre: d.nombre, categoria_id: d.categoriaId, precio_referencia: d.precioReferencia })
+    .insert({
+      tipo: d.tipo,
+      nombre: d.nombre,
+      categoria_id: d.categoriaId,
+      precio_referencia: d.precioReferencia,
+      modalidad: d.modalidad,
+    })
     .select("id")
     .single();
   if (error) return errorProducto(error);
@@ -94,6 +101,7 @@ export async function editarProducto(_: EstadoFormulario, f: FormData): Promise<
     nombre: texto(f, "nombre"),
     categoriaId: texto(f, "categoriaId"),
     precioReferencia: texto(f, "precioReferencia"),
+    modalidad: texto(f, "modalidad"),
     activo: f.get("activo") === "on",
     aplicarATodas: f.get("aplicarATodas") === "on",
     quitarImagen: f.get("quitarImagen") === "on",
@@ -130,13 +138,14 @@ export async function editarProducto(_: EstadoFormulario, f: FormData): Promise<
     .from("productos")
     .update(
       sedeId
-        ? { nombre: d.nombre, categoria_id: d.categoriaId, imagen_path: imagenPath }
+        ? { nombre: d.nombre, categoria_id: d.categoriaId, imagen_path: imagenPath, modalidad: d.modalidad }
         : {
             nombre: d.nombre,
             categoria_id: d.categoriaId,
             precio_referencia: d.precioReferencia,
             imagen_path: imagenPath,
             activo: d.activo,
+            modalidad: d.modalidad,
           },
     )
     .eq("id", d.id);

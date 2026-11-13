@@ -1,4 +1,5 @@
 /** Carrito de la venta en curso: reducer puro, sin React. */
+import type { ModalidadProducto } from "./producto";
 
 export type ProductoVendible = {
   id: string;
@@ -7,6 +8,7 @@ export type ProductoVendible = {
   categoria: string | null;
   imagenUrl: string | null;
   precio: number;
+  modalidad?: ModalidadProducto | null;
 };
 
 export type LineaCarrito = {

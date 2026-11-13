@@ -4,6 +4,9 @@ import { leerPesos } from "./dinero";
 export const IMAGEN_MAX_BYTES = 2 * 1024 * 1024;
 export const IMAGEN_TIPOS = ["image/jpeg", "image/png", "image/webp"] as const;
 
+export const MODALIDADES_PRODUCTO = ["mesa", "llevar"] as const;
+export type ModalidadProducto = (typeof MODALIDADES_PRODUCTO)[number];
+
 const precio = z
   .string()
   .transform((v, ctx) => {
@@ -22,6 +25,10 @@ const camposProducto = {
     .transform((v) => (v === "" ? null : v))
     .pipe(z.uuid().nullable()),
   precioReferencia: precio,
+  modalidad: z
+    .string()
+    .optional()
+    .transform((v) => (v === "mesa" || v === "llevar" ? v : null)),
 };
 
 export const esquemaCrearProducto = z.object({

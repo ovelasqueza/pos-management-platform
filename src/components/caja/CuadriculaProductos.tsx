@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useMemo, useRef, useState } from "react";
-import { Search, X } from "lucide-react";
+import { Search, ShoppingBag, Utensils, X } from "lucide-react";
 import { formatearPesos } from "@/lib/dominio/dinero";
 import { normalizarTexto } from "@/lib/dominio/producto";
 import type { ProductoVendible } from "@/lib/dominio/carrito";
@@ -26,15 +26,33 @@ const TarjetaProducto = memo(function TarjetaProducto({
   cantidad: number | undefined;
   onTocar: (p: ProductoVendible) => void;
 }) {
+  const borde = cantidad
+    ? "border-primario ring-1 ring-primario"
+    : producto.modalidad === "mesa"
+      ? "border-sky-200 hover:border-sky-400"
+      : producto.modalidad === "llevar"
+        ? "border-amber-200 hover:border-amber-400"
+        : "border-borde hover:border-borde-activo";
+
   return (
     <li>
       <button
         type="button"
         onClick={() => onTocar(producto)}
-        className={`relative flex h-full min-h-36 w-full flex-col items-center justify-between gap-1 rounded-tarjeta border bg-superficie p-2 text-center active:bg-suave ${
-          cantidad ? "border-primario ring-1 ring-primario" : "border-borde hover:border-borde-activo"
-        }`}
+        className={`relative flex h-full min-h-36 w-full flex-col items-center justify-between gap-1 rounded-tarjeta border bg-superficie p-2 text-center active:bg-suave ${borde}`}
       >
+        {producto.modalidad === "mesa" && (
+          <span className="absolute top-1 left-1 inline-flex items-center gap-0.5 rounded-full border border-sky-200 bg-sky-100 px-1.5 py-0.5 text-[10px] leading-none font-bold text-sky-800">
+            <Utensils size={10} aria-hidden />
+            Mesa
+          </span>
+        )}
+        {producto.modalidad === "llevar" && (
+          <span className="absolute top-1 left-1 inline-flex items-center gap-0.5 rounded-full border border-amber-200 bg-amber-100 px-1.5 py-0.5 text-[10px] leading-none font-bold text-amber-800">
+            <ShoppingBag size={10} aria-hidden />
+            Llevar
+          </span>
+        )}
         {cantidad && (
           <span className="num absolute top-1 right-1 flex min-w-6 items-center justify-center rounded-full bg-primario px-1.5 text-xs font-bold text-white">
             {cantidad}
@@ -56,6 +74,7 @@ const TarjetaProducto = memo(function TarjetaProducto({
 export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando, oculto = false }: Props) {
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState<string | null>(null);
+  const [filtroModalidad, setFiltroModalidad] = useState<"todas" | "mesa" | "llevar">("todas");
   const [enfocado, setEnfocado] = useState(false);
   const campo = useRef<HTMLInputElement>(null);
   const buscando = enfocado || busqueda.trim() !== "";
@@ -75,12 +94,36 @@ export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando
 
   const categoriaActiva = categoria && categorias.some(([id]) => id === categoria) ? categoria : null;
 
-  const visibles = useMemo(() => {
+  const baseVisibles = useMemo(() => {
     const q = normalizarTexto(busqueda);
     // Al buscar se ignora la categoría: encuentra el producto esté donde esté
     if (q) return productosIndexados.filter((x) => x.texto.includes(q)).map((x) => x.producto);
     return categoriaActiva ? productos.filter((p) => p.categoriaId === categoriaActiva) : productos;
   }, [productos, productosIndexados, busqueda, categoriaActiva]);
+
+  const { productosMesa, productosLlevar, productosOtros } = useMemo(() => {
+    const mesa: ProductoVendible[] = [];
+    const llevar: ProductoVendible[] = [];
+    const otros: ProductoVendible[] = [];
+    for (const p of baseVisibles) {
+      if (p.modalidad === "mesa") mesa.push(p);
+      else if (p.modalidad === "llevar") llevar.push(p);
+      else otros.push(p);
+    }
+    return { productosMesa: mesa, productosLlevar: llevar, productosOtros: otros };
+  }, [baseVisibles]);
+
+  const tieneModalidades = productosMesa.length > 0 || productosLlevar.length > 0;
+  const modalidadActiva =
+    (filtroModalidad === "mesa" && productosMesa.length > 0) ||
+    (filtroModalidad === "llevar" && productosLlevar.length > 0)
+      ? filtroModalidad
+      : "todas";
+
+  const visibles = useMemo(() => {
+    if (buscando || modalidadActiva === "todas") return baseVisibles;
+    return modalidadActiva === "mesa" ? productosMesa : productosLlevar;
+  }, [buscando, modalidadActiva, baseVisibles, productosMesa, productosLlevar]);
 
   const chip = (activo: boolean) =>
     `flex min-h-10 items-center justify-center rounded-control border px-2 text-center text-xs leading-tight font-semibold ${
@@ -89,6 +132,7 @@ export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando
 
   const elegir = (id: string | null) => {
     setCategoria(id);
+    setFiltroModalidad("todas");
     setBusqueda("");
   };
 
@@ -160,12 +204,101 @@ export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando
         </div>
       )}
 
-      <ul className="barra-fina grid min-h-0 flex-1 auto-rows-min grid-cols-3 gap-2 overflow-y-auto pr-1 pb-1 sm:grid-cols-4 lg:grid-cols-5">
-        {visibles.map((p) => (
-          <TarjetaProducto key={p.id} producto={p} cantidad={cantidades.get(p.id)} onTocar={onTocar} />
-        ))}
-        {visibles.length === 0 && <li className="col-span-full py-10 text-center text-texto-3">Sin productos</li>}
-      </ul>
+      {tieneModalidades && !buscando && (
+        <div className="flex shrink-0 flex-wrap gap-1.5" role="group" aria-label="Tipo de entrega">
+          <button
+            type="button"
+            onClick={() => setFiltroModalidad("todas")}
+            aria-pressed={modalidadActiva === "todas"}
+            className={`inline-flex min-h-9 items-center gap-1.5 rounded-control border px-3 text-xs font-semibold ${
+              modalidadActiva === "todas"
+                ? "border-texto bg-texto text-white"
+                : "border-borde bg-superficie text-texto-2 hover:border-borde-activo"
+            }`}
+          >
+            Todos ({baseVisibles.length})
+          </button>
+          {productosMesa.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setFiltroModalidad("mesa")}
+              aria-pressed={modalidadActiva === "mesa"}
+              className={`inline-flex min-h-9 items-center gap-1.5 rounded-control border px-3 text-xs font-semibold ${
+                modalidadActiva === "mesa"
+                  ? "border-sky-700 bg-sky-700 text-white"
+                  : "border-sky-200 bg-sky-50 text-sky-800 hover:border-sky-400"
+              }`}
+            >
+              <Utensils size={14} aria-hidden />
+              Para la mesa ({productosMesa.length})
+            </button>
+          )}
+          {productosLlevar.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setFiltroModalidad("llevar")}
+              aria-pressed={modalidadActiva === "llevar"}
+              className={`inline-flex min-h-9 items-center gap-1.5 rounded-control border px-3 text-xs font-semibold ${
+                modalidadActiva === "llevar"
+                  ? "border-amber-700 bg-amber-700 text-white"
+                  : "border-amber-200 bg-amber-50 text-amber-800 hover:border-amber-400"
+              }`}
+            >
+              <ShoppingBag size={14} aria-hidden />
+              Para llevar ({productosLlevar.length})
+            </button>
+          )}
+        </div>
+      )}
+
+      {!buscando && tieneModalidades && modalidadActiva === "todas" ? (
+        <div className="barra-fina flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1 pb-1">
+          {[
+            {
+              clave: "mesa",
+              titulo: "Para la mesa",
+              icono: <Utensils size={15} aria-hidden />,
+              estiloTitulo: "text-sky-800 border-sky-200 bg-sky-50",
+              lista: productosMesa,
+            },
+            {
+              clave: "llevar",
+              titulo: "Para llevar",
+              icono: <ShoppingBag size={15} aria-hidden />,
+              estiloTitulo: "text-amber-800 border-amber-200 bg-amber-50",
+              lista: productosLlevar,
+            },
+            {
+              clave: "otros",
+              titulo: "Otros",
+              icono: null,
+              estiloTitulo: "text-texto-2 border-borde bg-suave",
+              lista: productosOtros,
+            },
+          ]
+            .filter((s) => s.lista.length > 0)
+            .map((seccion) => (
+              <section key={seccion.clave} className="flex flex-col gap-2">
+                <h3 className={`inline-flex w-fit items-center gap-1.5 rounded-control border px-2.5 py-1 text-xs font-bold uppercase tracking-wide ${seccion.estiloTitulo}`}>
+                  {seccion.icono}
+                  {seccion.titulo} ({seccion.lista.length})
+                </h3>
+                <ul className="grid auto-rows-min grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
+                  {seccion.lista.map((p) => (
+                    <TarjetaProducto key={p.id} producto={p} cantidad={cantidades.get(p.id)} onTocar={onTocar} />
+                  ))}
+                </ul>
+              </section>
+            ))}
+        </div>
+      ) : (
+        <ul className="barra-fina grid min-h-0 flex-1 auto-rows-min grid-cols-3 gap-2 overflow-y-auto pr-1 pb-1 sm:grid-cols-4 lg:grid-cols-5">
+          {visibles.map((p) => (
+            <TarjetaProducto key={p.id} producto={p} cantidad={cantidades.get(p.id)} onTocar={onTocar} />
+          ))}
+          {visibles.length === 0 && <li className="col-span-full py-10 text-center text-texto-3">Sin productos</li>}
+        </ul>
+      )}
     </div>
   );
 }
