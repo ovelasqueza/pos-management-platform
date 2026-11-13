@@ -41,7 +41,7 @@ import { Modal } from "@/components/ui/Modal";
 import { useImprimir } from "@/components/impresion/ProveedorImpresion";
 import { CuadriculaProductos } from "./CuadriculaProductos";
 import { PanelCarrito } from "./PanelCarrito";
-import { PanelCobro, type ResultadoCobro } from "./PanelCobro";
+import { PanelCobro, type PartesMixto, type ResultadoCobro } from "./PanelCobro";
 import { PanelVentas } from "./PanelVentas";
 import { PanelGastos } from "./PanelGastos";
 import { CierreTurno } from "./CierreTurno";
@@ -81,6 +81,7 @@ type VentaEncolada = {
   metodo: MetodoPago;
   lineas: { producto_id: string; nombre: string; cantidad: number; precio: number }[];
   recibido: number | null;
+  mixto?: PartesMixto | null;
   total: number;
   cambio: number | null;
   cliente: Cliente | null;
@@ -242,6 +243,7 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
       lineas: { producto_id: string; cantidad: number; precio: number }[],
       recibido: number | null,
       cliente: Cliente | null,
+      mixto?: PartesMixto | null,
     ): Promise<{ ticket: DatosTicket | null; error: { code?: string; message?: string } | null }> => {
       const esperas = [0, 800, 1800];
       let ultimoError: { code?: string; message?: string } | null = null;
@@ -256,6 +258,7 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
           p_lineas: lineasActuales,
           p_recibido: recibido,
           ...(cliente && !esConsumidorFinal(cliente) ? { p_cliente: cliente } : {}),
+          ...(mixto ? { p_monto_efectivo: mixto.efectivo, p_monto_transferencia: mixto.transferencia } : {}),
         });
 
         if (!error && data) {
@@ -334,6 +337,7 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
           actual.lineas.map((l) => ({ producto_id: l.producto_id, cantidad: l.cantidad, precio: l.precio })),
           actual.recibido,
           actual.cliente,
+          actual.mixto,
         );
         if (ticket) {
           restantes.shift();
@@ -408,6 +412,7 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
     recibido: number | null,
     cliente: Cliente | null,
     imprimirTicket: boolean,
+    mixto?: PartesMixto | null,
   ): Promise<ResultadoCobro> {
     if (cobrandoRef.current) {
       return { ok: false, error: "Registrando la venta…", reintentable: false };
@@ -427,8 +432,13 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
         precio: l.precio,
       }));
       const total = totalCarrito(carrito);
-      const montoRecibido = metodo === "efectivo" ? recibido : null;
-      const cambio = montoRecibido !== null ? montoRecibido - total : null;
+      const montoRecibido = metodo === "efectivo" || metodo === "mixto" ? recibido : null;
+      const cambio =
+        metodo === "efectivo" && montoRecibido !== null
+          ? montoRecibido - total
+          : metodo === "mixto" && montoRecibido !== null && mixto
+            ? montoRecibido - mixto.efectivo
+            : null;
 
       const { ticket, error } = await enviarVentaASupabase(
         clave,
@@ -436,12 +446,13 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
         lineasEnvio.map((l) => ({ producto_id: l.producto_id, cantidad: l.cantidad, precio: l.precio })),
         montoRecibido,
         cliente,
+        mixto,
       );
 
       if (ticket) {
         localStorage.removeItem(claveCobro(turnoId));
         despachar({ tipo: "vaciar" });
-        if (metodo === "efectivo") {
+        if (metodo === "efectivo" || metodo === "mixto") {
           void abrirCajon({ evitarImpresionSiHayTicket: imprimirTicket });
         }
         if (imprimirTicket) {
@@ -474,6 +485,7 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
             metodo,
             lineas: lineasEnvio,
             recibido: montoRecibido,
+            mixto: mixto ?? null,
             total,
             cambio,
             cliente: cliente && !esConsumidorFinal(cliente) ? cliente : null,
@@ -495,6 +507,8 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
             total,
             recibido: montoRecibido,
             cambio,
+            monto_efectivo: mixto?.efectivo ?? null,
+            monto_transferencia: mixto?.transferencia ?? null,
             cliente: { tipo: clienteTicket.tipo, documento: clienteTicket.documento, nombre: clienteTicket.nombre },
             lineas: lineasEnvio.map((l) => ({
               nombre: l.nombre,
@@ -506,7 +520,7 @@ export function PuntoVenta({ turnoId, sede, cajero, productosIniciales }: Props)
 
           localStorage.removeItem(claveCobro(turnoId));
           despachar({ tipo: "vaciar" });
-          if (metodo === "efectivo") {
+          if (metodo === "efectivo" || metodo === "mixto") {
             void abrirCajon({ evitarImpresionSiHayTicket: imprimirTicket });
           }
           if (imprimirTicket) {

@@ -153,6 +153,12 @@ export function Ticket({ datos, copia }: { datos: DatosTicket; copia: boolean })
       <div className="mt-2">
         <Seccion>
           <Fila izq="Pago" der={nombreMetodo(datos.metodo)} />
+          {datos.metodo === "mixto" && datos.monto_efectivo != null && datos.monto_transferencia != null && (
+            <>
+              <Fila izq="  Efectivo" der={formatearPesos(datos.monto_efectivo)} />
+              <Fila izq="  QR" der={formatearPesos(datos.monto_transferencia)} />
+            </>
+          )}
           {datos.recibido !== null && (
             <>
               <Fila izq="Recibido" der={formatearPesos(datos.recibido)} />

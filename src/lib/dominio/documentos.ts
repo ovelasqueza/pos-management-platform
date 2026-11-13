@@ -1,4 +1,4 @@
-import type { MetodoPago } from "./cobro";
+import type { MetodoBase, MetodoPago } from "./cobro";
 
 /** Datos que devuelve la BD para imprimir (ver privado.ticket y privado.armar_reporte). */
 
@@ -15,6 +15,8 @@ export type DatosTicket = {
   total: number;
   recibido: number | null;
   cambio: number | null;
+  monto_efectivo?: number | null;
+  monto_transferencia?: number | null;
   /** Ventas antes del script 09 no lo traen: se asume Consumidor Final */
   cliente?: { tipo: string; documento: string; nombre: string };
   /** Desde el script 18: hora y motivo si la venta se anuló */
@@ -45,8 +47,8 @@ export type DatosReporte = {
     monto_caja?: number;
     monto_mayor?: number;
     /** Lo que salió de cada parte de la caja mayor (reportes anteriores traen parte_mayor) */
-    mayor?: Partial<Record<MetodoPago, number>>;
-    parte_mayor?: MetodoPago | null;
+    mayor?: Partial<Record<MetodoBase, number>>;
+    parte_mayor?: MetodoBase | null;
   }[];
   gastos_total: number;
   /** Spec 06: gastos que salieron de la caja (se restan del esperado) y de la caja mayor */
@@ -56,7 +58,7 @@ export type DatosReporte = {
   contado: number;
   diferencia: number;
   /** Spec 06: lo que entró a la caja mayor al cerrar */
-  caja_mayor?: Record<MetodoPago, number> & { total: number };
+  caja_mayor?: Record<MetodoBase, number> & { total: number };
   queda_en_caja?: number;
   productos: { nombre: string; unidades: number; valor: number }[];
 };

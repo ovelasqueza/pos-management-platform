@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Search, ShoppingBag, Utensils, X } from "lucide-react";
 import { formatearPesos } from "@/lib/dominio/dinero";
 import { normalizarTexto } from "@/lib/dominio/producto";
@@ -79,6 +79,42 @@ export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando
   const campo = useRef<HTMLInputElement>(null);
   const buscando = enfocado || busqueda.trim() !== "";
 
+  // Al presionar cualquier tecla de texto o número en la caja, enfoca y escribe directo en el buscador
+  useEffect(() => {
+    if (oculto) return;
+    function alPresionarTecla(e: KeyboardEvent) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key.length !== 1 || e.key === " ") return;
+      const activo = document.activeElement;
+      if (
+        activo instanceof HTMLInputElement ||
+        activo instanceof HTMLTextAreaElement ||
+        activo instanceof HTMLSelectElement ||
+        (activo instanceof HTMLElement && activo.isContentEditable)
+      ) {
+        return;
+      }
+      if (document.querySelector('[role="dialog"], [aria-modal="true"]')) return;
+      e.preventDefault();
+      campo.current?.focus();
+      setBusqueda((prev) => prev + e.key);
+      onBuscando?.(true);
+    }
+    window.addEventListener("keydown", alPresionarTecla);
+    return () => window.removeEventListener("keydown", alPresionarTecla);
+  }, [oculto, onBuscando]);
+
+  // Si el buscador queda enfocado pero vacío por 4 segundos, vuelve a mostrar las categorías
+  useEffect(() => {
+    if (!enfocado || busqueda.trim() !== "") return;
+    const t = window.setTimeout(() => {
+      campo.current?.blur();
+      setEnfocado(false);
+      onBuscando?.(false);
+    }, 4000);
+    return () => window.clearTimeout(t);
+  }, [enfocado, busqueda, onBuscando]);
+
   // Índice de búsqueda precalculado una sola vez cuando cambia el catálogo
   const productosIndexados = useMemo(
     () => productos.map((p) => ({ producto: p, texto: normalizarTexto(p.nombre) })),
@@ -117,7 +153,8 @@ export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando
     return { productosMesa: mesa, productosLlevar: llevar, productosOtros: otros };
   }, [baseVisibles]);
 
-  const tieneModalidades = productosMesa.length > 0 || productosLlevar.length > 0;
+  const mostrarModalidad =
+    Boolean(categoriaActiva) && !buscando && (productosMesa.length > 0 || productosLlevar.length > 0);
   const modalidadActiva =
     (filtroModalidad === "mesa" && productosMesa.length > 0) ||
     (filtroModalidad === "llevar" && productosLlevar.length > 0)
@@ -125,9 +162,9 @@ export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando
       : "todas";
 
   const visibles = useMemo(() => {
-    if (buscando || modalidadActiva === "todas") return baseVisibles;
+    if (!mostrarModalidad || modalidadActiva === "todas") return baseVisibles;
     return modalidadActiva === "mesa" ? productosMesa : productosLlevar;
-  }, [buscando, modalidadActiva, baseVisibles, productosMesa, productosLlevar]);
+  }, [mostrarModalidad, modalidadActiva, baseVisibles, productosMesa, productosLlevar]);
 
   const chip = (activo: boolean) =>
     `flex min-h-10 items-center justify-center rounded-control border px-2 text-center text-xs leading-tight font-semibold ${
@@ -155,7 +192,16 @@ export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando
           enterKeyHint="search"
           autoComplete="off"
           value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
+          onChange={(e) => {
+            const valor = e.target.value;
+            setBusqueda(valor);
+            // Si borró toda la palabra, sale del buscador para volver a mostrar las categorías
+            if (valor === "" && busqueda !== "") {
+              campo.current?.blur();
+              setEnfocado(false);
+              onBuscando?.(false);
+            }
+          }}
           onFocus={() => {
             setEnfocado(true);
             onBuscando?.(true);
@@ -167,6 +213,12 @@ export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando
           onKeyDown={(e) => {
             // Enter cierra el teclado en pantalla y deja ver los resultados
             if (e.key === "Enter") e.currentTarget.blur();
+            if (e.key === "Escape") {
+              setBusqueda("");
+              e.currentTarget.blur();
+              setEnfocado(false);
+              onBuscando?.(false);
+            }
           }}
           placeholder="Buscar producto"
           className="min-h-12 w-full rounded-control border border-borde-activo bg-superficie pr-12 pl-11 text-base focus:border-primario focus:outline-none [&::-webkit-search-cancel-button]:hidden"
@@ -208,8 +260,8 @@ export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando
         </div>
       )}
 
-      {tieneModalidades && !buscando && (
-        <div className="flex shrink-0 flex-wrap gap-1.5" role="group" aria-label="Tipo de entrega">
+      {mostrarModalidad && (
+        <div className="mt-1 mb-1 flex shrink-0 flex-wrap gap-2 border-b border-borde pb-3.5" role="group" aria-label="Tipo de entrega">
           <button
             type="button"
             onClick={() => setFiltroModalidad("todas")}
@@ -220,7 +272,7 @@ export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando
                 : "border-borde bg-superficie text-texto-2 hover:border-borde-activo"
             }`}
           >
-            Todos ({baseVisibles.length})
+            Todos
           </button>
           {productosMesa.length > 0 && (
             <button
@@ -234,7 +286,7 @@ export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando
               }`}
             >
               <Utensils size={14} aria-hidden />
-              Para la mesa ({productosMesa.length})
+              Para la mesa
             </button>
           )}
           {productosLlevar.length > 0 && (
@@ -249,43 +301,49 @@ export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando
               }`}
             >
               <ShoppingBag size={14} aria-hidden />
-              Para llevar ({productosLlevar.length})
+              Para llevar
             </button>
           )}
         </div>
       )}
 
-      {!buscando && tieneModalidades && modalidadActiva === "todas" ? (
-        <div className="barra-fina flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1 pb-1">
+      {mostrarModalidad && modalidadActiva === "todas" ? (
+        <div className="barra-fina flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pt-2 pr-1 pb-2">
           {[
             {
               clave: "mesa",
               titulo: "Para la mesa",
-              icono: <Utensils size={15} aria-hidden />,
-              estiloTitulo: "text-sky-800 border-sky-200 bg-sky-50",
+              icono: <Utensils size={14} aria-hidden />,
+              estiloTexto: "text-sky-800",
+              estiloLinea: "bg-sky-200",
               lista: productosMesa,
             },
             {
               clave: "llevar",
               titulo: "Para llevar",
-              icono: <ShoppingBag size={15} aria-hidden />,
-              estiloTitulo: "text-amber-800 border-amber-200 bg-amber-50",
+              icono: <ShoppingBag size={14} aria-hidden />,
+              estiloTexto: "text-amber-800",
+              estiloLinea: "bg-amber-200",
               lista: productosLlevar,
             },
             {
               clave: "otros",
               titulo: "Otros",
               icono: null,
-              estiloTitulo: "text-texto-2 border-borde bg-suave",
+              estiloTexto: "text-texto-2",
+              estiloLinea: "bg-borde",
               lista: productosOtros,
             },
           ]
             .filter((s) => s.lista.length > 0)
             .map((seccion) => (
-              <section key={seccion.clave} className="flex flex-col gap-2">
-                <h3 className={`inline-flex w-fit items-center gap-1.5 rounded-control border px-2.5 py-1 text-xs font-bold uppercase tracking-wide ${seccion.estiloTitulo}`}>
-                  {seccion.icono}
-                  {seccion.titulo} ({seccion.lista.length})
+              <section key={seccion.clave} className="flex flex-col gap-2.5">
+                <h3 className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider ${seccion.estiloTexto}`}>
+                  <span className="inline-flex items-center gap-1.5">
+                    {seccion.icono}
+                    {seccion.titulo}
+                  </span>
+                  <span className={`h-px flex-1 ${seccion.estiloLinea}`} aria-hidden />
                 </h3>
                 <ul className="grid auto-rows-min grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
                   {seccion.lista.map((p) => (

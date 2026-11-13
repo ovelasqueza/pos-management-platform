@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Banknote, CreditCard, Delete, Pencil, Printer, QrCode, RotateCw, UserRound, X, type LucideIcon } from "lucide-react";
-import { formatearPesos } from "@/lib/dominio/dinero";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { ArrowLeftRight, Banknote, Delete, Pencil, Printer, QrCode, RotateCw, UserRound, X, type LucideIcon } from "lucide-react";
+import { formatearPesos, leerPesos } from "@/lib/dominio/dinero";
 import { calcularEfectivo, type MetodoPago } from "@/lib/dominio/cobro";
 import {
   CONSUMIDOR_FINAL,
@@ -18,11 +18,18 @@ import { Modal } from "@/components/ui/Modal";
 import { useTecladoFisico } from "./tecladoFisico";
 
 export type ResultadoCobro = { ok: true; cambio: number | null } | { ok: false; error: string; reintentable: boolean };
+export type PartesMixto = { efectivo: number; transferencia: number };
 
 type Props = {
   total: number;
   onCancelar: () => void;
-  onConfirmar: (metodo: MetodoPago, recibido: number | null, cliente: Cliente | null, imprimirTicket: boolean) => Promise<ResultadoCobro>;
+  onConfirmar: (
+    metodo: MetodoPago,
+    recibido: number | null,
+    cliente: Cliente | null,
+    imprimirTicket: boolean,
+    mixto?: PartesMixto | null,
+  ) => Promise<ResultadoCobro>;
 };
 
 /* Billetes y monedas de Colombia: imágenes en public/billetes (Banco de la República). */
@@ -31,10 +38,21 @@ const MONEDAS = [50, 100, 200, 500, 1_000];
 const TECLAS = ["7", "8", "9", "4", "5", "6", "1", "2", "3", "000", "0", "borrar"] as const;
 type Tecla = (typeof TECLAS)[number] | "limpiar";
 
-const METODOS: { valor: MetodoPago; nombre: string; icono: LucideIcon }[] = [
+const METODOS: { valor: MetodoPago; nombre: string; etiqueta?: ReactNode; icono: LucideIcon }[] = [
   { valor: "efectivo", nombre: "Efectivo", icono: Banknote },
   { valor: "transferencia", nombre: "QR", icono: QrCode },
-  { valor: "tarjeta", nombre: "Tarjeta", icono: CreditCard },
+  {
+    valor: "mixto",
+    nombre: "Pago combinado",
+    etiqueta: (
+      <>
+        Pago
+        <br />
+        combinado
+      </>
+    ),
+    icono: ArrowLeftRight,
+  },
 ];
 
 const miles = (v: number) => new Intl.NumberFormat("es-CO").format(v);
@@ -55,29 +73,39 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
   const [recibido, setRecibido] = useState(0);
   const [enviando, setEnviando] = useState(false);
   const enviandoRef = useRef(false);
-  const [error, setError] = useState<{ texto: string; reintentable: boolean; recibido: number | null } | null>(null);
-  const [porConfirmar, setPorConfirmar] = useState<{ metodo: MetodoPago; monto: number | null } | null>(null);
+  const [error, setError] = useState<{
+    texto: string;
+    reintentable: boolean;
+    recibido: number | null;
+    mixto?: PartesMixto | null;
+  } | null>(null);
+  const [porConfirmar, setPorConfirmar] = useState<{
+    metodo: MetodoPago;
+    monto: number | null;
+    mixto?: PartesMixto | null;
+  } | null>(null);
   const [cliente, setCliente] = useState<Cliente>(CONSUMIDOR_FINAL);
   const [editandoCliente, setEditandoCliente] = useState(false);
+  const [editandoMixto, setEditandoMixto] = useState(false);
   const [imprimirTicket, setImprimirTicket] = useState(false);
 
   const efectivo = calcularEfectivo(total, recibido);
 
   /** Pide confirmación antes de cobrar (salvo Paga Exacto, que ejecuta directo). */
-  function confirmar(m: MetodoPago, monto: number | null) {
+  function confirmar(m: MetodoPago, monto: number | null, mixto?: PartesMixto | null) {
     if (enviandoRef.current || enviando) return;
-    setPorConfirmar({ metodo: m, monto });
+    setPorConfirmar({ metodo: m, monto, mixto: mixto ?? null });
   }
 
-  async function ejecutar(m: MetodoPago, monto: number | null) {
+  async function ejecutar(m: MetodoPago, monto: number | null, mixto?: PartesMixto | null) {
     if (enviandoRef.current) return;
     enviandoRef.current = true;
     setPorConfirmar(null);
     setEnviando(true);
     setError(null);
     try {
-      const r = await onConfirmar(m, monto, esConsumidorFinal(cliente) ? null : cliente, imprimirTicket);
-      if (!r.ok) setError({ texto: r.error, reintentable: r.reintentable, recibido: monto });
+      const r = await onConfirmar(m, monto, esConsumidorFinal(cliente) ? null : cliente, imprimirTicket, mixto ?? null);
+      if (!r.ok) setError({ texto: r.error, reintentable: r.reintentable, recibido: monto, mixto: mixto ?? null });
     } finally {
       enviandoRef.current = false;
       setEnviando(false);
@@ -87,10 +115,10 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
   // Enter = confirmar el cobro pendiente; Escape = cancelar la confirmación o volver a la venta
   useEffect(() => {
     const alTeclear = (e: KeyboardEvent) => {
-      if (enviando || editandoCliente) return;
+      if (enviando || editandoCliente || editandoMixto) return;
       if (porConfirmar && e.key === "Enter") {
         e.preventDefault();
-        void ejecutar(porConfirmar.metodo, porConfirmar.monto);
+        void ejecutar(porConfirmar.metodo, porConfirmar.monto, porConfirmar.mixto);
       } else if (e.key === "Escape") {
         if (porConfirmar) setPorConfirmar(null);
         else onCancelar();
@@ -117,13 +145,14 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
     });
   };
 
-  // Teclado físico: dígitos y Retroceso/Supr para el recibido; Enter = Cobrar (pide confirmación)
+  // Teclado físico: dígitos y Retroceso/Supr para el recibido; Enter = Cobrar
   const raiz = useRef<HTMLDivElement>(null);
   useTecladoFisico(raiz, (t) => {
-    if (porConfirmar || enviando || editandoCliente) return false;
+    if (porConfirmar || enviando || editandoCliente || editandoMixto) return false;
     if (t === "enter") {
-      if (metodo !== "efectivo") return confirmar(metodo, null);
+      if (metodo === "transferencia") return confirmar(metodo, null);
       if (!efectivo.completo) return false;
+      if (efectivo.cambio === 0) return void ejecutar("efectivo", recibido);
       return confirmar("efectivo", recibido);
     }
     if (metodo !== "efectivo") return false;
@@ -137,9 +166,10 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
           total={total}
           metodo={porConfirmar.metodo}
           recibido={porConfirmar.monto}
+          mixto={porConfirmar.mixto}
           imprimirTicket={imprimirTicket}
           onCambiarImprimir={setImprimirTicket}
-          onSi={() => ejecutar(porConfirmar.metodo, porConfirmar.monto)}
+          onSi={() => ejecutar(porConfirmar.metodo, porConfirmar.monto, porConfirmar.mixto)}
           onNo={() => setPorConfirmar(null)}
           cliente={cliente}
         />
@@ -155,29 +185,48 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
         onCerrar={() => setEditandoCliente(false)}
       />
 
+      <ModalPagoCombinado
+        abierto={editandoMixto}
+        total={total}
+        enviando={enviando}
+        onCerrar={() => setEditandoMixto(false)}
+        onConfirmar={(partes) => {
+          setEditandoMixto(false);
+          void ejecutar("mixto", partes.efectivo, partes);
+        }}
+      />
+
       {/* Fila 1: métodos de pago + cliente (Volver está en la barra superior de cobro) */}
       <div className="flex shrink-0 gap-2">
         <div className="grid flex-1 grid-cols-3 gap-2" role="radiogroup" aria-label="Método de pago">
-          {METODOS.map(({ valor, nombre, icono: Icono }) => (
-            <button
-              key={valor}
-              type="button"
-              role="radio"
-              aria-checked={metodo === valor}
-              onClick={() => {
-                setMetodo(valor);
-                setError(null);
-              }}
-              className={`flex min-h-14 items-center justify-center gap-2 rounded-tarjeta border-2 text-lg font-bold ${
-                metodo === valor
-                  ? "border-primario bg-primario text-white"
-                  : "border-borde bg-superficie text-texto-2 hover:border-borde-activo"
-              }`}
-            >
-              <Icono size={24} aria-hidden />
-              {nombre}
-            </button>
-          ))}
+          {METODOS.map(({ valor, nombre, etiqueta, icono: Icono }) => {
+            const activo = valor === "mixto" ? editandoMixto : metodo === valor && !editandoMixto;
+            return (
+              <button
+                key={valor}
+                type="button"
+                role="radio"
+                aria-checked={activo}
+                aria-label={nombre}
+                onClick={() => {
+                  setError(null);
+                  if (valor === "mixto") {
+                    setEditandoMixto(true);
+                  } else {
+                    setMetodo(valor);
+                  }
+                }}
+                className={`flex min-h-14 items-center justify-center gap-2 rounded-tarjeta border-2 px-2 text-lg leading-tight font-bold ${
+                  activo
+                    ? "border-primario bg-primario text-white"
+                    : "border-borde bg-superficie text-texto-2 hover:border-borde-activo"
+                }`}
+              >
+                <Icono size={24} className="shrink-0" aria-hidden />
+                <span className="text-left">{etiqueta ?? nombre}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Impresión opcional: por defecto apagada ("Sin impresión"). Tocar para activar/desactivar. */}
@@ -223,7 +272,7 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
 
       {metodo === "efectivo" ? (
         <div className="flex min-h-0 flex-1 flex-col gap-3">
-          {/* Fila 2: Total · Falta/Cambio (ancho) · Recibido encima del teclado */}
+          {/* Fila 2: Total · Falta/Cambio · Recibido encima del teclado */}
           <div className={`mb-2 grid shrink-0 gap-x-2 ${COLUMNAS}`}>
             <Dato titulo="TOTAL" valor={total} />
             <div className="col-span-2">
@@ -327,7 +376,7 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
               ))}
             </div>
 
-            {/* Exacto: cobra de una vez sin pedir confirmación */}
+            {/* Exacto (efectivo) o Mitad y mitad (mixto) */}
             <button
               type="button"
               disabled={enviando}
@@ -339,14 +388,20 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
             </button>
           </div>
 
-          {error && <ErrorCobro error={error} enviando={enviando} reintentar={() => ejecutar("efectivo", error.recibido)} />}
+          {error && (
+            <ErrorCobro
+              error={error}
+              enviando={enviando}
+              reintentar={() => ejecutar(error.mixto ? "mixto" : metodo, error.recibido, error.mixto)}
+            />
+          )}
 
           <Boton
             variante="primario"
             tamano="lg"
             className="w-full shrink-0 text-xl"
             disabled={!efectivo.completo || enviando}
-            onClick={() => confirmar("efectivo", recibido)}
+            onClick={() => (efectivo.completo && efectivo.cambio === 0 ? void ejecutar("efectivo", recibido) : confirmar("efectivo", recibido))}
           >
             {enviando
               ? "Registrando…"
@@ -358,16 +413,14 @@ export function PanelCobro({ total, onCancelar, onConfirmar }: Props) {
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
           <span className="flex size-28 items-center justify-center rounded-full bg-exito-suave text-primario">
-            {metodo === "transferencia" ? <QrCode size={64} aria-hidden /> : <CreditCard size={64} aria-hidden />}
+            <QrCode size={64} aria-hidden />
           </span>
           <div>
             <p className="text-sm font-semibold text-texto-3">TOTAL</p>
             <p className="num text-5xl font-bold tracking-tight">{formatearPesos(total)}</p>
           </div>
           <p className="max-w-md text-lg text-texto-2">
-            {metodo === "transferencia"
-              ? "Muestra el QR al cliente y confirma cuando veas el pago (Nequi, Daviplata o banco)."
-              : "Cobra en el datáfono y confirma cuando salga aprobado."}
+            Muestra el QR al cliente y confirma cuando veas el pago (Nequi, Daviplata o banco).
           </p>
           {error && <ErrorCobro error={error} enviando={enviando} reintentar={() => ejecutar(metodo, null)} />}
           <Boton variante="primario" tamano="lg" className="w-full max-w-md text-xl" disabled={enviando} onClick={() => confirmar(metodo, null)}>
@@ -479,6 +532,7 @@ function Confirmacion({
   total,
   metodo,
   recibido,
+  mixto,
   imprimirTicket,
   onCambiarImprimir,
   onSi,
@@ -488,6 +542,7 @@ function Confirmacion({
   total: number;
   metodo: MetodoPago;
   recibido: number | null;
+  mixto?: PartesMixto | null;
   imprimirTicket: boolean;
   onCambiarImprimir: (v: boolean) => void;
   onSi: () => void;
@@ -495,7 +550,7 @@ function Confirmacion({
   cliente: Cliente;
 }) {
   const nombre = METODOS.find((m) => m.valor === metodo)?.nombre ?? metodo;
-  const cambio = recibido !== null ? recibido - total : null;
+  const cambio = metodo === "efectivo" && recibido !== null ? recibido - total : null;
 
   return (
     <div className="absolute inset-0 z-20 flex items-center justify-center rounded-tarjeta bg-fondo/80 p-4" role="alertdialog" aria-modal="true" aria-label="Confirmar cobro">
@@ -503,6 +558,11 @@ function Confirmacion({
         <div>
           <p className="text-sm font-semibold text-texto-3">¿Cobrar con {nombre === "QR" ? "QR" : nombre.toLowerCase()}?</p>
           <p className="num text-4xl font-bold tracking-tight">{formatearPesos(total)}</p>
+          {metodo === "mixto" && mixto && (
+            <p className="num mt-1 text-sm font-semibold text-texto-2">
+              Efectivo {formatearPesos(mixto.efectivo)} · QR {formatearPesos(mixto.transferencia)}
+            </p>
+          )}
           <p className="mt-1 truncate text-sm text-texto-2">
             {cliente.nombre} · {cliente.tipo} {cliente.documento}
           </p>
@@ -561,5 +621,107 @@ function ErrorCobro({
     >
       {error.texto}
     </Aviso>
+  );
+}
+
+const conMiles = (texto: string) => {
+  const digitos = texto.replace(/\D/g, "").replace(/^0+/, "").slice(0, 9);
+  return digitos ? new Intl.NumberFormat("es-CO").format(Number(digitos)) : "";
+};
+
+function ModalPagoCombinado({
+  abierto,
+  total,
+  enviando,
+  onCerrar,
+  onConfirmar,
+}: {
+  abierto: boolean;
+  total: number;
+  enviando: boolean;
+  onCerrar: () => void;
+  onConfirmar: (partes: PartesMixto) => void;
+}) {
+  const [textoEfectivo, setTextoEfectivo] = useState("");
+  const [textoQr, setTextoQr] = useState("");
+
+  if (!abierto) return null;
+
+  const montoEfectivo = leerPesos(textoEfectivo, 0) ?? 0;
+  const montoQr = leerPesos(textoQr, 0) ?? 0;
+  const suma = montoEfectivo + montoQr;
+  const diferencia = total - suma;
+  const completo = suma === total && montoEfectivo > 0 && montoQr > 0;
+
+  const cerrar = () => {
+    setTextoEfectivo("");
+    setTextoQr("");
+    onCerrar();
+  };
+
+  const enviar = (e: FormEvent) => {
+    e.preventDefault();
+    if (!completo || enviando) return;
+    onConfirmar({ efectivo: montoEfectivo, transferencia: montoQr });
+  };
+
+  return (
+    <Modal abierto={abierto} titulo="Pago combinado" onCerrar={cerrar} ancho="sm">
+      <form onSubmit={enviar} className="flex flex-col gap-4">
+        <div className="flex items-baseline justify-between rounded-tarjeta bg-suave px-4 py-2.5">
+          <span className="text-sm font-semibold text-texto-3">Total a pagar</span>
+          <span className="num text-2xl font-bold">{formatearPesos(total)}</span>
+        </div>
+
+        <Campo
+          etiqueta="Efectivo"
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder="0"
+          autoFocus
+          value={textoEfectivo}
+          onChange={(e) => setTextoEfectivo(conMiles(e.target.value))}
+          className="num text-right text-xl font-bold"
+        />
+
+        <Campo
+          etiqueta="QR"
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder="0"
+          value={textoQr}
+          onChange={(e) => setTextoQr(conMiles(e.target.value))}
+          className="num text-right text-xl font-bold"
+        />
+
+        <div
+          role="status"
+          className={`rounded-tarjeta border px-4 py-2.5 text-center text-sm font-bold ${
+            completo
+              ? "border-primario bg-exito-suave text-primario-activo"
+              : diferencia < 0
+                ? "border-peligro/40 bg-peligro-suave text-peligro"
+                : "border-advertencia/40 bg-advertencia-suave text-advertencia"
+          }`}
+        >
+          {completo
+            ? "Completo · Listo para cobrar"
+            : diferencia > 0
+              ? `Faltan ${formatearPesos(diferencia)}`
+              : diferencia < 0
+                ? `Sobran ${formatearPesos(Math.abs(diferencia))}`
+                : "Ambos montos deben ser mayores a $ 0"}
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <Boton type="button" onClick={cerrar}>
+            Cancelar
+          </Boton>
+          <Boton type="submit" variante="primario" disabled={!completo || enviando}>
+            {enviando ? "Registrando…" : "Cobrar"}
+          </Boton>
+        </div>
+      </form>
+    </Modal>
   );
 }

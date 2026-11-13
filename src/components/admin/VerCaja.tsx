@@ -5,7 +5,7 @@ import { Banknote, CreditCard, QrCode, RotateCw, Wallet } from "lucide-react";
 import { crearClienteNavegador } from "@/lib/supabase/browser";
 import { formatearPesos } from "@/lib/dominio/dinero";
 import { formatearFechaHora, formatearHora } from "@/lib/dominio/fechas";
-import { nombreMetodo, type MetodoPago } from "@/lib/dominio/cobro";
+import { nombreMetodo, type MetodoBase, type MetodoPago } from "@/lib/dominio/cobro";
 import { mensajeDeError } from "@/lib/dominio/errores";
 import { describirOrigen, origenDeGasto } from "@/lib/dominio/cajaMayor";
 import { Boton } from "@/components/ui/Boton";
@@ -35,6 +35,8 @@ type CajaTurno = {
     creado_en: string;
     total: number;
     metodo: MetodoPago;
+    monto_efectivo?: number | null;
+    monto_transferencia?: number | null;
     anulada?: boolean;
     motivo?: string | null;
   }[];
@@ -45,8 +47,8 @@ type CajaTurno = {
     monto_caja?: number;
     monto_mayor?: number;
     /** Lo que salió de cada parte de la caja mayor (reportes anteriores traen parte_mayor) */
-    mayor?: Partial<Record<MetodoPago, number>>;
-    parte_mayor?: MetodoPago | null;
+    mayor?: Partial<Record<MetodoBase, number>>;
+    parte_mayor?: MetodoBase | null;
   }[];
 };
 
@@ -119,6 +121,11 @@ export function VerCaja({ turnoId, cerrar }: { turnoId: string; cerrar: () => vo
                       <span className="num text-texto-3">{formatearHora(v.creado_en)}</span>
                       <span className="mr-auto min-w-0 text-texto-2">
                         {nombreMetodo(v.metodo)}
+                        {v.metodo === "mixto" && (
+                          <span className="num block text-xs text-texto-3">
+                            Efectivo {formatearPesos(v.monto_efectivo ?? 0)} · QR {formatearPesos(v.monto_transferencia ?? 0)}
+                          </span>
+                        )}
                         {v.anulada && <span className="block truncate text-xs text-peligro">Anulada · {v.motivo}</span>}
                       </span>
                       <span className={`num font-semibold ${v.anulada ? "line-through" : ""}`}>{formatearPesos(v.total)}</span>

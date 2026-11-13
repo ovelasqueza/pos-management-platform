@@ -74,7 +74,12 @@ function Lineas({ carrito, despachar, onCantidad }: Pick<Props, "carrito" | "des
   );
 }
 
-export function PanelCarrito({ carrito, despachar, onCobrar, cobroDeshabilitado }: Props) {
+export function PanelCarrito({
+  carrito,
+  despachar,
+  onCobrar,
+  cobroDeshabilitado,
+}: Props) {
   const [editando, setEditando] = useState<string | null>(null);
   const [texto, setTexto] = useState("");
   const [confirmarVaciar, setConfirmarVaciar] = useState(false);
@@ -84,6 +89,7 @@ export function PanelCarrito({ carrito, despachar, onCobrar, cobroDeshabilitado 
   const unidades = unidadesCarrito(carrito);
   const lineaEditando = carrito.find((l) => l.productoId === editando);
   const cantidadValida = Number(texto) >= 1 && Number(texto) <= CANTIDAD_MAX;
+  const sinAccion = carrito.length === 0 || cobroDeshabilitado;
 
   const abrirCantidad = (id: string) => {
     setEditando(id);
@@ -99,8 +105,8 @@ export function PanelCarrito({ carrito, despachar, onCobrar, cobroDeshabilitado 
     <Boton
       variante="primario"
       tamano="lg"
-      className="w-full text-xl"
-      disabled={carrito.length === 0 || cobroDeshabilitado}
+      className="w-full px-3 text-lg"
+      disabled={sinAccion}
       onClick={() => {
         setVerMovil(false);
         onCobrar();

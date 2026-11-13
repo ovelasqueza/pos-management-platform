@@ -28,6 +28,8 @@ export type Venta = {
   creado_en: string;
   total: number;
   metodo: MetodoPago;
+  monto_efectivo?: number | null;
+  monto_transferencia?: number | null;
   /** Script 18; null si la venta está vigente */
   anulada_en?: string | null;
   motivo_anulacion?: string | null;
@@ -72,14 +74,23 @@ export function PanelVentas({ abierto, turnoId, colaVentas, onCerrar, onTurnoCer
     // Intenta traer ventas con lineas_venta y motivo_anulacion
     const r = await supabase
       .from("ventas")
-      .select("id, numero, creado_en, total, metodo, anulada_en, motivo_anulacion, lineas_venta(producto_id, nombre, precio, cantidad)")
+      .select(
+        "id, numero, creado_en, total, metodo, monto_efectivo, monto_transferencia, anulada_en, motivo_anulacion, lineas_venta(producto_id, nombre, precio, cantidad)",
+      )
       .eq("turno_id", turnoId)
       .order("creado_en", { ascending: false });
 
     if (!r.error) return r;
 
-    // Respaldo 1: si no existen las columnas de anulación
+    // Respaldo 1: si faltan columnas de pago mixto o anulación
     if (r.error?.code === "42703") {
+      const r1 = await supabase
+        .from("ventas")
+        .select("id, numero, creado_en, total, metodo, anulada_en, motivo_anulacion, lineas_venta(producto_id, nombre, precio, cantidad)")
+        .eq("turno_id", turnoId)
+        .order("creado_en", { ascending: false });
+      if (!r1.error) return r1;
+
       const r2 = await supabase
         .from("ventas")
         .select("id, numero, creado_en, total, metodo, lineas_venta(producto_id, nombre, precio, cantidad)")
@@ -374,6 +385,11 @@ export function PanelVentas({ abierto, turnoId, colaVentas, onCerrar, onTurnoCer
                     <span className="num w-24 shrink-0 whitespace-nowrap text-sm text-texto-3">{formatearHora(v.creado_en)}</span>
                     <span className="min-w-0 flex-1 text-sm text-texto-2">
                       {nombreMetodo(v.metodo)}
+                      {v.metodo === "mixto" && (
+                        <span className="num block text-xs text-texto-3">
+                          Efectivo {formatearPesos(v.monto_efectivo ?? 0)} · QR {formatearPesos(v.monto_transferencia ?? 0)}
+                        </span>
+                      )}
                       {v.anulada_en && (
                         <span className="block truncate text-xs text-peligro" title={v.motivo_anulacion ?? undefined}>
                           Anulada · {v.motivo_anulacion}

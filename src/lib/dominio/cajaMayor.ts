@@ -1,5 +1,5 @@
 /** Caja mayor (spec 06): reparto de gastos, envío al cerrar y etiquetas. Puro. */
-import { nombreMetodo, type MetodoPago } from "./cobro";
+import { nombreMetodo, type MetodoBase } from "./cobro";
 import { formatearPesos } from "./dinero";
 
 export type OrigenGasto = "caja" | "mayor" | "ambas";
@@ -10,18 +10,18 @@ export const ORIGENES: { valor: OrigenGasto; nombre: string }[] = [
   { valor: "ambas", nombre: "Ambas" },
 ];
 
-export type SaldoCajaMayor = Record<MetodoPago, number> & { total: number };
+export type SaldoCajaMayor = Record<MetodoBase, number> & { total: number };
 
 export const SALDO_VACIO: SaldoCajaMayor = { efectivo: 0, transferencia: 0, tarjeta: 0, total: 0 };
 
-export type PartesMayor = Record<MetodoPago, number>;
+export type PartesMayor = Record<MetodoBase, number>;
 
 export const SIN_PARTES: PartesMayor = { efectivo: 0, transferencia: 0, tarjeta: 0 };
 
 export const sumaPartes = (p: PartesMayor) => p.efectivo + p.transferencia + p.tarjeta;
 
 /** Partes de la caja mayor con las que se puede pagar un gasto (la tarjeta no sirve para pagar gastos). */
-export const PARTES_PARA_GASTOS: { valor: MetodoPago; nombre: string }[] = [
+export const PARTES_PARA_GASTOS: { valor: MetodoBase; nombre: string }[] = [
   { valor: "efectivo", nombre: "Efectivo" },
   { valor: "transferencia", nombre: "QR" },
 ];
@@ -49,7 +49,7 @@ export function repartirGasto(monto: number, origen: OrigenGasto, partes: Partes
 }
 
 /** Primera parte que no alcanza con el saldo, o null. */
-export function parteSinSaldo(partes: PartesMayor, saldo: SaldoCajaMayor): MetodoPago | null {
+export function parteSinSaldo(partes: PartesMayor, saldo: SaldoCajaMayor): MetodoBase | null {
   return (["efectivo", "transferencia", "tarjeta"] as const).find((p) => partes[p] > saldo[p]) ?? null;
 }
 
@@ -72,7 +72,7 @@ export type GastoConOrigen = {
   mayor_efectivo?: number | null;
   mayor_transferencia?: number | null;
   mayor_tarjeta?: number | null;
-  parte_mayor?: MetodoPago | null;
+  parte_mayor?: MetodoBase | null;
 };
 
 export function partesDeGasto(g: GastoConOrigen): PartesMayor {

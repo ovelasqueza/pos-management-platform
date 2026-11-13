@@ -75,6 +75,8 @@ export type FilaVenta = {
   creado_en: string;
   total: number;
   metodo: MetodoPago;
+  monto_efectivo?: number | null;
+  monto_transferencia?: number | null;
   sede: { nombre: string } | null;
   cajero: { nombre_completo: string } | null;
   /** Script 18 */
@@ -96,8 +98,13 @@ export async function listarVentas(sedeId: string | null, rango: Rango, pagina: 
     if (sedeId) q = q.eq("sede_id", sedeId);
     return q.returns<FilaVenta[]>();
   };
-  let { data, error, count } = await consulta("id, numero, creado_en, total, metodo, anulada_en, motivo_anulacion");
-  // Respaldo mientras no se ejecute el script 18
+  let { data, error, count } = await consulta(
+    "id, numero, creado_en, total, metodo, monto_efectivo, monto_transferencia, anulada_en, motivo_anulacion",
+  );
+  // Respaldo mientras no se ejecuten migraciones pendientes
+  if (error?.code === "42703") {
+    ({ data, error, count } = await consulta("id, numero, creado_en, total, metodo, anulada_en, motivo_anulacion"));
+  }
   if (error?.code === "42703") ({ data, error, count } = await consulta("id, numero, creado_en, total, metodo"));
   if (error) fallar("las ventas", error);
   return { filas: data ?? [], total: count ?? 0 };

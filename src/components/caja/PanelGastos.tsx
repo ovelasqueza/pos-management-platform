@@ -6,7 +6,7 @@ import { crearClienteNavegador } from "@/lib/supabase/browser";
 import { formatearPesos, leerPesos } from "@/lib/dominio/dinero";
 import { formatearHora } from "@/lib/dominio/fechas";
 import { esCodigo, mensajeDeError } from "@/lib/dominio/errores";
-import { nombreMetodo, type MetodoPago } from "@/lib/dominio/cobro";
+import { nombreMetodo, type MetodoBase } from "@/lib/dominio/cobro";
 import {
   ORIGENES,
   PARTES_PARA_GASTOS,
@@ -40,7 +40,7 @@ type Gasto = {
   anulado_en: string | null;
 };
 
-type TextosPartes = Record<MetodoPago, string>;
+type TextosPartes = Record<MetodoBase, string>;
 const PARTES_VACIAS: TextosPartes = { efectivo: "", transferencia: "", tarjeta: "" };
 
 /** Monto con puntos de miles mientras se escribe: 25000 → 25.000 */

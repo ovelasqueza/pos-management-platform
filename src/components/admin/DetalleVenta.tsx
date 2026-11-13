@@ -62,7 +62,14 @@ export function DetalleVenta({ ventaId, numero }: { ventaId: string; numero: num
               <Dato etiqueta="Fecha de venta">
                 <span className="num">{formatearFechaHora(ticket.fecha)}</span>
               </Dato>
-              <Dato etiqueta="Pago">{nombreMetodo(ticket.metodo)}</Dato>
+              <Dato etiqueta="Pago">
+                {nombreMetodo(ticket.metodo)}
+                {ticket.metodo === "mixto" && ticket.monto_efectivo != null && ticket.monto_transferencia != null && (
+                  <span className="num block text-xs text-texto-3">
+                    Efectivo {formatearPesos(ticket.monto_efectivo)} · QR {formatearPesos(ticket.monto_transferencia)}
+                  </span>
+                )}
+              </Dato>
               {ticket.cliente && !esConsumidorFinal(ticket.cliente) && (
                 <Dato etiqueta="Cliente">
                   {ticket.cliente.nombre} · <span className="num">{ticket.cliente.tipo} {ticket.cliente.documento}</span>

@@ -107,6 +107,11 @@ async function Ventas({ ctx }: { ctx: Contexto }) {
                 <td className={`${td} hidden md:table-cell`}>{v.cajero?.nombre_completo}</td>
                 <td className={td}>
                   {nombreMetodo(v.metodo)}
+                  {v.metodo === "mixto" && (
+                    <span className="num block text-xs text-texto-3">
+                      Efectivo {formatearPesos(v.monto_efectivo ?? 0)} · QR {formatearPesos(v.monto_transferencia ?? 0)}
+                    </span>
+                  )}
                   {v.anulada_en && <span className="ml-2 rounded-control bg-peligro-suave px-2 py-0.5 text-xs text-peligro">Anulada</span>}
                 </td>
                 <td className={`${td} num text-right ${v.anulada_en ? "line-through" : "font-semibold"}`}>{formatearPesos(v.total)}</td>

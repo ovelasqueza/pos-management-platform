@@ -1,14 +1,16 @@
 /** Cálculos de cobro y de cierre de turno (puros). */
 
-export type MetodoPago = "efectivo" | "transferencia" | "tarjeta";
+export type MetodoBase = "efectivo" | "transferencia" | "tarjeta";
+export type MetodoPago = MetodoBase | "mixto";
 
-export const METODOS: { valor: MetodoPago; nombre: string }[] = [
+export const METODOS: { valor: MetodoBase; nombre: string }[] = [
   { valor: "efectivo", nombre: "Efectivo" },
   { valor: "transferencia", nombre: "QR" },
   { valor: "tarjeta", nombre: "Tarjeta" },
 ];
 
-export const nombreMetodo = (m: MetodoPago) => METODOS.find((x) => x.valor === m)?.nombre ?? m;
+export const nombreMetodo = (m: MetodoPago) =>
+  m === "mixto" ? "Pago combinado" : (METODOS.find((x) => x.valor === m)?.nombre ?? m);
 
 /** Billetes para sumar rápido el efectivo recibido. */
 export const BILLETES = [2_000, 5_000, 10_000, 20_000, 50_000, 100_000] as const;

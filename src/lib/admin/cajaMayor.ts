@@ -1,7 +1,7 @@
 import "server-only";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { limitesRango, type Rango } from "@/lib/dominio/fechas";
-import type { MetodoPago } from "@/lib/dominio/cobro";
+import type { MetodoBase } from "@/lib/dominio/cobro";
 import type { DatosReporte } from "@/lib/dominio/documentos";
 import { SALDO_VACIO, type SaldoCajaMayor, type TipoMovimiento } from "@/lib/dominio/cajaMayor";
 import { POR_PAGINA } from "./reportes";
@@ -12,7 +12,7 @@ export async function saldosPorSede(): Promise<Map<string, SaldoCajaMayor>> {
   const { data, error } = await supabase
     .from("caja_mayor_saldos")
     .select("sede_id, parte, saldo")
-    .returns<{ sede_id: string; parte: MetodoPago; saldo: number | string }[]>();
+    .returns<{ sede_id: string; parte: MetodoBase; saldo: number | string }[]>();
   if (error) throw new Error(`No se pudo cargar la caja mayor: ${error.message}`);
 
   const mapa = new Map<string, SaldoCajaMayor>();
@@ -30,7 +30,7 @@ export type Movimiento = {
   id: string;
   creadoEn: string;
   tipo: TipoMovimiento;
-  parte: MetodoPago;
+  parte: MetodoBase;
   monto: number;
   saldoDespues: number;
   usuario: string;
@@ -43,7 +43,7 @@ type FilaMovimiento = {
   id: string;
   creado_en: string;
   tipo: TipoMovimiento;
-  parte: MetodoPago;
+  parte: MetodoBase;
   monto: number | string;
   saldo_despues: number | string;
   descripcion: string | null;

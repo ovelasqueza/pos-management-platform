@@ -22,6 +22,7 @@ const mensajes: Record<string, string> = {
   LINEAS_INVALIDAS: "Revisa las cantidades del carrito",
   PRECIOS_ACTUALIZADOS: "Algunos precios cambiaron. Revisa el carrito",
   RECIBIDO_INSUFICIENTE: "El efectivo recibido no alcanza",
+  PAGO_MIXTO_INVALIDO: "Revisa los montos de efectivo y QR",
   TOTAL_EXCEDIDO: "El total es demasiado alto",
   MONTO_INVALIDO: "Escribe un monto válido",
   DESCRIPCION_INVALIDA: "Escribe una descripción",

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Equal, Minus, Plus } from "lucide-react";
 import { formatearPesos, leerPesos } from "@/lib/dominio/dinero";
-import { METODOS, type MetodoPago } from "@/lib/dominio/cobro";
+import { METODOS, type MetodoBase } from "@/lib/dominio/cobro";
 import type { SaldoCajaMayor } from "@/lib/dominio/cajaMayor";
 import { moverCajaMayor, type Operacion } from "@/app/admin/[sede]/caja-mayor/acciones";
 import { Boton } from "@/components/ui/Boton";
@@ -59,7 +59,7 @@ function FormularioMovimiento({
   operacion: Operacion;
   cerrar: () => void;
 }) {
-  const [parte, setParte] = useState<MetodoPago>("efectivo");
+  const [parte, setParte] = useState<MetodoBase>("efectivo");
   const [monto, setMonto] = useState("");
   const [descripcion, setDescripcion] = useState(operacion === "fijar" ? "Saldo inicial" : "");
   const [errores, setErrores] = useState<{ monto?: string; descripcion?: string; general?: string }>({});
