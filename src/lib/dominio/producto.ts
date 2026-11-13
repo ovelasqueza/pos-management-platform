@@ -25,10 +25,6 @@ const camposProducto = {
     .transform((v) => (v === "" ? null : v))
     .pipe(z.uuid().nullable()),
   precioReferencia: precio,
-  modalidad: z
-    .string()
-    .optional()
-    .transform((v) => (v === "mesa" || v === "llevar" ? v : null)),
 };
 
 export const esquemaCrearProducto = z.object({

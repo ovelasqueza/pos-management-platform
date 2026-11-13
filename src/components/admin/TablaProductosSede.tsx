@@ -33,15 +33,23 @@ const sinSigno = (v: number) => formatearPesos(v).replace("$ ", "");
 const TODAS = "";
 const SIN_CATEGORIA = "sin-categoria";
 
-/** Interruptor "Vende" con guardado automático y Reintentar si falla. */
-function Vende({ fila, guardar }: { fila: FilaProductoSede; guardar: (v: boolean) => Promise<boolean> }) {
-  const [activo, setActivo] = useState(fila.habilitado);
+/** Interruptor de tabla con guardado automático y Reintentar si falla. */
+function InterruptorTabla({
+  valor,
+  etiqueta,
+  guardar,
+}: {
+  valor: boolean;
+  etiqueta: string;
+  guardar: (v: boolean) => Promise<boolean>;
+}) {
+  const [activo, setActivo] = useState(valor);
   const [fallo, setFallo] = useState(false);
   const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
-    setActivo(fila.habilitado);
-  }, [fila.habilitado]);
+    setActivo(valor);
+  }, [valor]);
 
   async function enviar(v: boolean) {
     setActivo(v); // conserva el estado tocado aunque falle
@@ -50,13 +58,13 @@ function Vende({ fila, guardar }: { fila: FilaProductoSede; guardar: (v: boolean
     setGuardando(false);
     setFallo(!ok);
     if (!ok) {
-      setActivo(fila.habilitado);
+      setActivo(valor);
     }
   }
 
   return (
     <div className="flex flex-col items-center">
-      <Interruptor activo={activo} etiqueta={`${fila.nombre}: activo en esta sede`} deshabilitado={guardando} onCambiar={enviar} />
+      <Interruptor activo={activo} etiqueta={etiqueta} deshabilitado={guardando} onCambiar={enviar} />
       {fallo && (
         <button
           type="button"
@@ -138,6 +146,22 @@ export function TablaProductosSede({ sedeId, sedeNombre, tipo, filas, categorias
             ...(cambios.precio_venta !== undefined ? { precioVenta: cambios.precio_venta } : {}),
           };
         })
+      );
+    }
+    return ok;
+  };
+
+  const actualizarLlevar = async (productoId: string, esLlevar: boolean) => {
+    const modalidad: ModalidadProducto | null = esLlevar ? "llevar" : null;
+    const { data, error } = await supabase
+      .from("productos")
+      .update({ modalidad })
+      .eq("id", productoId)
+      .select("id");
+    const ok = !error && data.length === 1;
+    if (ok) {
+      setFilasLocales((prev) =>
+        prev.map((f) => (f.productoId === productoId ? { ...f, modalidad } : f))
       );
     }
     return ok;
@@ -272,6 +296,12 @@ export function TablaProductosSede({ sedeId, sedeNombre, tipo, filas, categorias
               <th className="w-20 px-2 py-3 text-center font-medium" title="Activar o desactivar el producto en esta sede">
                 Activo
               </th>
+              <th
+                className="w-20 px-2 py-3 text-center font-medium"
+                title="Si está activo, el cajero lo ve en Para llevar; si está apagado, se entiende para la mesa"
+              >
+                Llevar
+              </th>
               <th className="px-4 py-3 text-right font-medium">Precio venta</th>
               <th className="px-4 py-3 text-right font-medium">Costo</th>
               <th className="w-12" />
@@ -303,7 +333,18 @@ export function TablaProductosSede({ sedeId, sedeNombre, tipo, filas, categorias
                   </div>
                 </td>
                 <td className="px-2 py-1">
-                  <Vende fila={f} guardar={(habilitado) => actualizar(f.productoId, { habilitado })} />
+                  <InterruptorTabla
+                    valor={f.habilitado}
+                    etiqueta={`${f.nombre}: activo en esta sede`}
+                    guardar={(habilitado) => actualizar(f.productoId, { habilitado })}
+                  />
+                </td>
+                <td className="px-2 py-1">
+                  <InterruptorTabla
+                    valor={f.modalidad === "llevar"}
+                    etiqueta={`${f.nombre}: para llevar`}
+                    guardar={(esLlevar) => actualizarLlevar(f.productoId, esLlevar)}
+                  />
                 </td>
                 <td className="px-4 py-1">
                   <CampoAutoguardado
@@ -337,7 +378,6 @@ export function TablaProductosSede({ sedeId, sedeNombre, tipo, filas, categorias
                       precioVenta: f.precioVenta,
                       imagenUrl: f.imagenUrl,
                       activo: f.habilitado,
-                      modalidad: f.modalidad,
                     }}
                   />
                 </td>

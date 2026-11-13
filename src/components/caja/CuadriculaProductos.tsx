@@ -110,6 +110,10 @@ export function CuadriculaProductos({ productos, cantidades, onTocar, onBuscando
       else if (p.modalidad === "llevar") llevar.push(p);
       else otros.push(p);
     }
+    // Si solo se usa el interruptor "Llevar", los demás productos de esa vista se entienden para la mesa
+    if (mesa.length === 0 && llevar.length > 0) {
+      return { productosMesa: otros, productosLlevar: llevar, productosOtros: [] };
+    }
     return { productosMesa: mesa, productosLlevar: llevar, productosOtros: otros };
   }, [baseVisibles]);
 

@@ -10,7 +10,6 @@ import { MiniaturaProducto } from "@/components/ui/MiniaturaProducto";
 import { crearProducto, editarProducto, eliminarProducto } from "@/app/admin/[sede]/productos/acciones";
 import { reducirFoto } from "@/lib/imagen";
 import type { EstadoFormulario } from "@/lib/formularios";
-import type { ModalidadProducto } from "@/lib/dominio/producto";
 import type { TipoSede } from "@/lib/dominio/sede";
 
 export type ProductoEditable = {
@@ -21,7 +20,6 @@ export type ProductoEditable = {
   precioVenta?: number;
   imagenUrl: string | null;
   activo: boolean;
-  modalidad?: ModalidadProducto | null;
 };
 
 export type OpcionCategoria = { id: string; nombre: string };
@@ -136,31 +134,6 @@ function Formulario({
           ))}
         </select>
       </div>
-
-      <fieldset className="flex flex-col gap-1">
-        <legend className="text-sm font-semibold text-texto-2">Modalidad en caja (opcional)</legend>
-        <div className="grid grid-cols-3 gap-1.5">
-          {[
-            { valor: "", etiqueta: "General" },
-            { valor: "mesa", etiqueta: "Para la mesa" },
-            { valor: "llevar", etiqueta: "Para llevar" },
-          ].map((op) => (
-            <label key={op.valor} className="cursor-pointer">
-              <input
-                type="radio"
-                name="modalidad"
-                value={op.valor}
-                defaultChecked={(producto?.modalidad ?? "") === op.valor}
-                className="peer sr-only"
-              />
-              <span className="flex min-h-11 items-center justify-center rounded-control border border-borde-activo bg-superficie px-2 text-center text-xs font-semibold text-texto-2 peer-checked:border-primario peer-checked:bg-primario-suave peer-checked:text-primario">
-                {op.etiqueta}
-              </span>
-            </label>
-          ))}
-        </div>
-        <p className="text-xs text-texto-3">Permite al cajero ver separados los productos de mesa y para llevar.</p>
-      </fieldset>
 
       <Campo
         etiqueta={
